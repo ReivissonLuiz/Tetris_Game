@@ -524,4 +524,10 @@ public class PlayManager {
     public int getRightPanelW() { return rightPanelW; }
     public int getRightPanelH() { return rightPanelH; }
 
+    // getters do painel esquerdo para permitir posicionamento de componentes dentro dele
+    public int getLeftPanelX() { return leftPanelX; }
+    public int getLeftPanelY() { return leftPanelY; }
+    public int getLeftPanelW() { return leftPanelW; }
+    public int getLeftPanelH() { return leftPanelH; }
+
 }

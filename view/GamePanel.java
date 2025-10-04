@@ -33,6 +33,8 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
     private JButton ctrlDownBtn;
     private JButton ctrlRotateBtn;
     private JButton ctrlRightBtn;
+    private JButton pauseBtn;
+    private JButton profileBtn;
     private BufferedImage menuBackground;
 
     public static Boolean powerupused;
@@ -53,8 +55,8 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
         this.setFocusable(true);
 
         // criar botão Iniciar
-        startBtn = new JButton("Iniciar");
-        startBtn.setBounds((WIDTH - 200) / 2, (HEIGHT / 2) - 40, 200, 50);
+    startBtn = new JButton("Iniciar");
+    // bounds serão definidos em update() para alinhar com o painel do menu
         startBtn.setFocusable(false);
         startBtn.addActionListener(new java.awt.event.ActionListener() {
             @Override
@@ -104,8 +106,8 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
         this.add(quitBtn);
 
         // criar botão de música abaixo do botão iniciar
-        musicBtn = new JButton(KeyHandler.musicOn ? "Música: On" : "Música: Off");
-        musicBtn.setBounds((WIDTH - 130) / 2, (HEIGHT / 2) + 20, 130, 30);
+    musicBtn = new JButton(KeyHandler.musicOn ? "Música: On" : "Música: Off");
+    // bounds serão definidos em update() para alinhar com o painel do menu
         musicBtn.setFocusable(false);
         musicBtn.addActionListener(new java.awt.event.ActionListener() {
             @Override
@@ -171,12 +173,57 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
             b.setFocusable(false);
             b.setVisible(false);
             b.setFont(new Font("SansSerif", Font.BOLD, 18));
-            // estilo: fundo escuro, texto claro, borda arredondada
-            b.setBackground(new Color(40, 44, 50));
+            // estilo preparado para imagem: sem fundo, sem borda, com cursor de mão
+            b.setContentAreaFilled(false);
+            b.setBorderPainted(false);
+            b.setOpaque(false);
             b.setForeground(new Color(230, 230, 230));
-            b.setBorder(BorderFactory.createLineBorder(new Color(100, 100, 110)));
+            b.setCursor(new Cursor(Cursor.HAND_CURSOR));
             this.add(b);
         }
+
+        // botões de canto: pause (esq) e profile (dir) — estilo igual aos botões de controle
+        pauseBtn = new JButton();
+        profileBtn = new JButton();
+        JButton[] cornerBtns = new JButton[] { pauseBtn, profileBtn };
+        for (JButton b : cornerBtns) {
+            b.setFocusable(false);
+            b.setVisible(false);
+            b.setFont(new Font("SansSerif", Font.BOLD, 18));
+            b.setContentAreaFilled(false);
+            b.setBorderPainted(false);
+            b.setOpaque(false);
+            b.setForeground(new Color(230, 230, 230));
+            b.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            this.add(b);
+        }
+
+        setControlButtonIcon(pauseBtn, "pause.png");
+        setControlButtonIcon(profileBtn, "profile.png");
+
+        pauseBtn.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent ev) {
+                KeyHandler.pausePressed = !KeyHandler.pausePressed;
+                if (KeyHandler.pausePressed) GamePanel.music.stop(); else if(KeyHandler.musicOn) { GamePanel.music.play(0,true); GamePanel.music.loop(); }
+                GamePanel.this.requestFocusInWindow();
+            }
+        });
+
+        profileBtn.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent ev) {
+                // placeholder: abrir diálogo de perfil
+                JOptionPane.showMessageDialog(GamePanel.this, "Área de perfil (placeholder)");
+            }
+        });
+
+        // tentar carregar ícones padrão (se houver arquivos em view/)
+        // nomes esperados: view/ctrl_left.png, view/ctrl_down.png, view/ctrl_rotate.png, view/ctrl_right.png
+        setControlButtonIcon(ctrlLeftBtn, "ctrl_left.png");
+        setControlButtonIcon(ctrlDownBtn, "ctrl_down.png");
+        setControlButtonIcon(ctrlRotateBtn, "ctrl_rotate.png");
+        setControlButtonIcon(ctrlRightBtn, "ctrl_right.png");
 
         // listeners: apenas definem as flags do KeyHandler (o Mino consumirá as flags no próximo update)
         // implementar press-and-hold: Timer dispara ação repetida enquanto o botão for mantido pressionado
@@ -211,6 +258,111 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
             }
         });
 
+    }
+
+    // helper: tenta carregar um ícone a partir de /view/ ou do diretório local view/
+    private void setControlButtonIcon(JButton btn, String filename) {
+        try {
+            Image img = null;
+            String loadedFrom = null;
+            // tentar resource no mesmo pacote
+            java.net.URL url = getClass().getResource(filename);
+            if (url == null) url = getClass().getResource("/view/" + filename);
+            if (url != null) {
+                img = ImageIO.read(url);
+                loadedFrom = url.toString();
+            } else {
+                // tentar arquivo relativo à pasta do projeto
+                java.io.File f = new java.io.File("view" + java.io.File.separator + filename);
+                if (f.exists()) {
+                    img = ImageIO.read(f);
+                    loadedFrom = f.getAbsolutePath();
+                }
+            }
+            if (img != null) {
+                // log simples para ajudar a diagnosticar qualidade: origem e dimensões
+                int ow = img.getWidth(null);
+                int oh = img.getHeight(null);
+                System.out.println("[IconLoad] " + filename + " loaded from=" + loadedFrom + " orig=" + ow + "x" + oh + " target=48x48");
+                // usar downscale progressivo para preservar mais nitidez em reduções grandes
+                BufferedImage scaledBuf = getProgressiveDownscale(img, 48, 48);
+                if (scaledBuf != null) {
+                    btn.setIcon(new ImageIcon(scaledBuf));
+                    btn.setText("");
+                }
+            }
+        } catch (IOException ex) {
+            // silenciar falha de carregamento — mantém o texto
+        }
+    }
+
+    // Escala uma Image para BufferedImage com alta qualidade (bicubic + render quality).
+    private BufferedImage getHighQualityScaledImage(Image srcImg, int targetW, int targetH) {
+        if (srcImg == null) return null;
+        // garantir que temos um BufferedImage de origem
+        BufferedImage srcBuf;
+        if (srcImg instanceof BufferedImage) {
+            srcBuf = (BufferedImage) srcImg;
+        } else {
+            srcBuf = new BufferedImage(srcImg.getWidth(null), srcImg.getHeight(null), BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g = srcBuf.createGraphics();
+            g.drawImage(srcImg, 0, 0, null);
+            g.dispose();
+        }
+
+        BufferedImage dst = new BufferedImage(targetW, targetH, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = dst.createGraphics();
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setComposite(AlphaComposite.SrcOver);
+        g2.drawImage(srcBuf, 0, 0, targetW, targetH, null);
+        g2.dispose();
+        return dst;
+    }
+
+    // Downscale progressivo: reduz pela metade repetidamente usando bicubic até atingir tamanho alvo.
+    private BufferedImage getProgressiveDownscale(Image srcImg, int targetW, int targetH) {
+        if (srcImg == null) return null;
+        int currentW = srcImg.getWidth(null);
+        int currentH = srcImg.getHeight(null);
+        if (currentW <= 0 || currentH <= 0) return null;
+
+        BufferedImage cur;
+        if (srcImg instanceof BufferedImage) {
+            cur = (BufferedImage) srcImg;
+        } else {
+            cur = new BufferedImage(currentW, currentH, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g = cur.createGraphics();
+            g.drawImage(srcImg, 0, 0, null);
+            g.dispose();
+        }
+
+        // Se já está próximo do alvo, usar único redimensionamento de alta qualidade
+        if (currentW <= targetW * 2 && currentH <= targetH * 2) {
+            return getHighQualityScaledImage(cur, targetW, targetH);
+        }
+
+        BufferedImage prev = cur;
+        while (currentW / 2 >= targetW && currentH / 2 >= targetH) {
+            int nextW = Math.max(targetW, currentW / 2);
+            int nextH = Math.max(targetH, currentH / 2);
+            BufferedImage tmp = new BufferedImage(nextW, nextH, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2 = tmp.createGraphics();
+            g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+            g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.drawImage(prev, 0, 0, nextW, nextH, null);
+            g2.dispose();
+            prev = tmp;
+            currentW = nextW;
+            currentH = nextH;
+            // se já atingiu um pouco acima do alvo, sair e fazer o ajuste final
+            if (currentW <= targetW * 2 && currentH <= targetH * 2) break;
+        }
+
+        // ajuste final com alta qualidade
+        return getHighQualityScaledImage(prev, targetW, targetH);
     }
 
     
@@ -297,7 +449,8 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
                 startBtn.setVisible(false);
                 musicBtn.setVisible(false);
                 // reposicionar botões para ficarem sempre abaixo da pontuação
-                int btnY = pm.getButtonsY();
+                // deixar os botões de game-over um pouco mais para baixo
+                int btnY = pm.getButtonsY() + 20;
                 int btnW = 160;
                 int gap = 20;
                 int leftX = (WIDTH - (btnW * 2 + gap)) / 2;
@@ -306,6 +459,23 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
             } else {
                 restartBtn.setVisible(false);
                 quitBtn.setVisible(false);
+            }
+            // quando estamos no menu, posicionar start/music centralizados dentro do painel do menu
+            if (inMenu) {
+                int panelX = mh.getPanelX();
+                int panelY = mh.getPanelY();
+                int panelW = mh.getPanelW();
+                int panelH = mh.getPanelH();
+                int startW = 200;
+                int startH = 50;
+                int musicW = 130;
+                int musicH = 30;
+                int startX = panelX + (panelW - startW) / 2;
+                int startY = panelY + panelH - startH - 60; // 60px acima da base do painel
+                int musicX = panelX + (panelW - musicW) / 2;
+                int musicY = startY + startH + 10;
+                startBtn.setBounds(startX, startY, startW, startH);
+                musicBtn.setBounds(musicX, musicY, musicW, musicH);
             }
         }
 
@@ -330,16 +500,38 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
             ctrlDownBtn.setBounds(baseX + (btnW + gap), baseY, btnW, btnH);
             ctrlRotateBtn.setBounds(baseX + (btnW + gap) * 2, baseY, btnW, btnH);
             ctrlRightBtn.setBounds(baseX + (btnW + gap) * 3, baseY, btnW, btnH);
+            // mostrar também os botões de canto (estilo igual aos controles)
+            pauseBtn.setVisible(true);
+            profileBtn.setVisible(true);
         } else {
             ctrlLeftBtn.setVisible(false);
             ctrlDownBtn.setVisible(false);
             ctrlRotateBtn.setVisible(false);
             ctrlRightBtn.setVisible(false);
+            pauseBtn.setVisible(false);
+            profileBtn.setVisible(false);
         }
 
         if (!KeyHandler.gamestart) {
             mh.update();
         }
+    // posicionar os botões DENTRO do painel direito (sem fundo)
+    int cornerPadding = 12;
+        // usar coordenadas do painel direito
+        int rpx = pm.getRightPanelX();
+        int rpy = pm.getRightPanelY();
+        int rpw = pm.getRightPanelW();
+    // pause no canto superior esquerdo do painel direito
+    pauseBtn.setBounds(rpx + cornerPadding, rpy + cornerPadding, btnW, btnH);
+    // profile no canto superior direito do painel direito
+    profileBtn.setBounds(rpx + rpw - cornerPadding - btnW, rpy + cornerPadding, btnW, btnH);
+        // reforçar estilo sem fundo
+        pauseBtn.setContentAreaFilled(false);
+        pauseBtn.setBorderPainted(false);
+        pauseBtn.setOpaque(false);
+        profileBtn.setContentAreaFilled(false);
+        profileBtn.setBorderPainted(false);
+        profileBtn.setOpaque(false);
         if (KeyHandler.gamequit)
         {
             System.exit(0);
@@ -386,7 +578,7 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
     public void PowerUpUpdate() {
        if(!powerupused){
            PlayManager.dropInterval += 40;
-           System.out.println(PlayManager.dropInterval);
+           // removido log de debug: System.out.println(PlayManager.dropInterval);
            powerupused = true;
            powerupInProgress = true;
            PowerupCounter = 0;

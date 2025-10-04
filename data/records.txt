@@ -1,0 +1,5 @@
+Player:1200
+Reivisson:1200
+Player:800
+Player:400
+Player:200

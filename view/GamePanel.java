@@ -11,6 +11,12 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import java.io.IOException;
+import java.awt.geom.RoundRectangle2D;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
 
@@ -35,6 +41,16 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
     private JButton ctrlRightBtn;
     private JButton pauseBtn;
     private JButton profileBtn;
+    private JPanel recordsPanel;
+    // Records with name and score
+    private static class Record {
+        String name;
+        int score;
+        Record(String n, int s) { name = n; score = s; }
+    }
+    private java.util.List<Record> records = new ArrayList<>();
+    // perfil atual
+    private String currentProfileName = "Player";
     private BufferedImage menuBackground;
 
     public static Boolean powerupused;
@@ -82,7 +98,21 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
         restartBtn.addActionListener(new java.awt.event.ActionListener() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent ev) {
-        // ... (setupHoldAction will wire o comportamento de press-and-hold e hover)
+        // reiniciar o estado do jogo
+                gameOverProcessed = false;
+                // limpar blocos estáticos e resetar intervalo de queda
+                model.PlayManager.staticBlocks.clear();
+                model.PlayManager.dropInterval = 40;
+                // criar novo PlayManager para reiniciar posição e estado
+                pm = new PlayManager();
+                // garantir que o jogo está em execução e não em pause
+                KeyHandler.gamestart = true;
+                KeyHandler.pausePressed = false;
+                // esconder botões de game over
+                restartBtn.setVisible(false);
+                quitBtn.setVisible(false);
+                startBtn.setVisible(false);
+                musicBtn.setVisible(false);
                 GamePanel.this.requestFocusInWindow();
                 if (KeyHandler.musicOn && !GamePanel.music.isMusicPlaying()) {
                     GamePanel.music.play(0, true);
@@ -198,6 +228,52 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
             this.add(b);
         }
 
+        // painel de records (centralizado no painel direito) - criado aqui e posicionado em update()
+        recordsPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                int w = getWidth();
+                int h = getHeight();
+                // fundo semi-transparente com borda arredondada
+                RoundRectangle2D rr = new RoundRectangle2D.Double(0, 0, w, h, 18, 18);
+                GradientPaint gp = new GradientPaint(0, 0, new Color(40, 43, 50, 220), 0, h, new Color(25, 27, 30, 200));
+                g2.setPaint(gp);
+                g2.fill(rr);
+                g2.setStroke(new BasicStroke(2f));
+                g2.setColor(new Color(160,160,170,160));
+                g2.draw(rr);
+
+                // título
+                g2.setFont(new Font("SansSerif", Font.BOLD, 18));
+                g2.setColor(new Color(240,240,240));
+                String title = "Records";
+                int tx = (w - g2.getFontMetrics().stringWidth(title)) / 2;
+                g2.drawString(title, tx, 28);
+
+                // listar records com nome
+                g2.setFont(new Font("SansSerif", Font.PLAIN, 16));
+                g2.setColor(new Color(220,220,220));
+                int startY = 48;
+                int step = 26;
+                for (int i = 0; i < records.size(); i++) {
+                    Record r = records.get(i);
+                    String line = String.format("%d. %s - %d", i+1, r.name, r.score);
+                    int lx = 16;
+                    int ly = startY + i * step;
+                    g2.drawString(line, lx, ly);
+                }
+            }
+        };
+        recordsPanel.setOpaque(false);
+        recordsPanel.setVisible(false);
+        this.add(recordsPanel);
+        // carregar records e perfil do arquivo (se existir)
+    loadRecordsFromFile();
+    loadProfileFromFile();
+
         setControlButtonIcon(pauseBtn, "pause.png");
         setControlButtonIcon(profileBtn, "profile.png");
 
@@ -213,8 +289,16 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
         profileBtn.addActionListener(new java.awt.event.ActionListener() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent ev) {
-                // placeholder: abrir diálogo de perfil
-                JOptionPane.showMessageDialog(GamePanel.this, "Área de perfil (placeholder)");
+                // abrir diálogo para escolher/editar o nome do perfil
+                String input = JOptionPane.showInputDialog(GamePanel.this, "Nome do perfil:", currentProfileName);
+                if (input != null) {
+                    String trimmed = input.trim();
+                    if (!trimmed.isEmpty()) {
+                        currentProfileName = trimmed;
+                        saveProfileToFile();
+                        JOptionPane.showMessageDialog(GamePanel.this, "Perfil atualizado: " + currentProfileName);
+                    }
+                }
             }
         });
 
@@ -258,6 +342,106 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
             }
         });
 
+    }
+
+    // Carrega records de data/records.txt; formato: name:score por linha (ou somente score para compatibilidade)
+    private void loadRecordsFromFile() {
+        try {
+            Path dataDir = Paths.get("data");
+            if (!Files.exists(dataDir)) {
+                Files.createDirectories(dataDir);
+            }
+            Path file = dataDir.resolve("records.txt");
+            if (!Files.exists(file)) {
+                // criar arquivo com valores padrão
+                List<String> lines = new ArrayList<>();
+                // valores padrão
+                lines.add("Player:1200");
+                lines.add("Player:800");
+                lines.add("Player:400");
+                lines.add("Player:200");
+                lines.add("Player:100");
+                Files.write(file, lines);
+                // carregar os padrões para a lista
+                records.clear();
+                records.add(new Record("Player", 1200));
+                records.add(new Record("Player", 800));
+                records.add(new Record("Player", 400));
+                records.add(new Record("Player", 200));
+                records.add(new Record("Player", 100));
+                return;
+            }
+            List<String> lines = Files.readAllLines(file);
+            records.clear();
+            for (String l : lines) {
+                String line = l.trim();
+                if (line.isEmpty()) continue;
+                String name = "Player";
+                String scorePart = line;
+                if (line.contains(":")) {
+                    String[] parts = line.split(":", 2);
+                    name = parts[0].trim();
+                    scorePart = parts[1].trim();
+                }
+                try {
+                    int sc = Integer.parseInt(scorePart);
+                    records.add(new Record(name, sc));
+                } catch (NumberFormatException ex) {
+                    // ignorar linha inválida
+                }
+            }
+            // ordenar por score decrescente e manter top5
+            records.sort((a,b) -> Integer.compare(b.score, a.score));
+            if (records.size() > 5) records = new ArrayList<>(records.subList(0,5));
+        } catch (IOException ex) {
+            // ignorar falha de I/O — manter valores padrão
+        }
+    }
+
+    // Salva os records atuais em data/records.txt (formato name:score)
+    private void saveRecordsToFile() {
+        try {
+            Path dataDir = Paths.get("data");
+            if (!Files.exists(dataDir)) Files.createDirectories(dataDir);
+            Path file = dataDir.resolve("records.txt");
+            List<String> lines = new ArrayList<>();
+            for (Record r : records) lines.add(r.name + ":" + r.score);
+            Files.write(file, lines);
+        } catch (IOException ex) {
+            // ignorar falha de I/O
+        }
+    }
+
+    // Carrega o perfil atual (nome) de data/profile.txt
+    private void loadProfileFromFile() {
+        try {
+            Path dataDir = Paths.get("data");
+            if (!Files.exists(dataDir)) Files.createDirectories(dataDir);
+            Path f = dataDir.resolve("profile.txt");
+            if (!Files.exists(f)) {
+                // criar com default
+                Files.write(f, java.util.List.of(currentProfileName));
+                return;
+            }
+            List<String> lines = Files.readAllLines(f);
+            if (!lines.isEmpty()) {
+                String n = lines.get(0).trim();
+                if (!n.isEmpty()) currentProfileName = n;
+            }
+        } catch (IOException ex) {
+            // ignorar
+        }
+    }
+
+    private void saveProfileToFile() {
+        try {
+            Path dataDir = Paths.get("data");
+            if (!Files.exists(dataDir)) Files.createDirectories(dataDir);
+            Path f = dataDir.resolve("profile.txt");
+            Files.write(f, java.util.List.of(currentProfileName));
+        } catch (IOException ex) {
+            // ignorar
+        }
     }
 
     // helper: tenta carregar um ícone a partir de /view/ ou do diretório local view/
@@ -374,6 +558,9 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
 
     }
 
+    // flag para detectar transição para game over e processar records
+    private boolean gameOverProcessed = false;
+
     @Override
     public void run() {
 
@@ -456,6 +643,23 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
                 int leftX = (WIDTH - (btnW * 2 + gap)) / 2;
                 restartBtn.setBounds(leftX, btnY, btnW, 40);
                 quitBtn.setBounds(leftX + btnW + gap, btnY, btnW, 40);
+            } else if (KeyHandler.pausePressed && !pm.gameOver) {
+                // quando pausado, mostrar os mesmos botões (Novo jogo / Sair)
+                restartBtn.setVisible(true);
+                quitBtn.setVisible(true);
+                startBtn.setVisible(false);
+                musicBtn.setVisible(false);
+                int btnY = pm.getButtonsY() + 20;
+                int btnW = 160;
+                int gap = 20;
+                int leftX = (WIDTH - (btnW * 2 + gap)) / 2;
+                restartBtn.setBounds(leftX, btnY, btnW, 40);
+                quitBtn.setBounds(leftX + btnW + gap, btnY, btnW, 40);
+                // esconder controles enquanto pausado
+                ctrlLeftBtn.setVisible(false);
+                ctrlDownBtn.setVisible(false);
+                ctrlRotateBtn.setVisible(false);
+                ctrlRightBtn.setVisible(false);
             } else {
                 restartBtn.setVisible(false);
                 quitBtn.setVisible(false);
@@ -503,6 +707,13 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
             // mostrar também os botões de canto (estilo igual aos controles)
             pauseBtn.setVisible(true);
             profileBtn.setVisible(true);
+            // mostrar painel de records no meio do painel direito
+            int recordsW = 180;
+            int recordsH = 180;
+            int recordsX = rpX + (rpW - recordsW) / 2;
+            int recordsY = rpY + (rpH - recordsH) / 2 - 30; // leve ajuste para cima
+            recordsPanel.setBounds(recordsX, recordsY, recordsW, recordsH);
+            recordsPanel.setVisible(true);
         } else {
             ctrlLeftBtn.setVisible(false);
             ctrlDownBtn.setVisible(false);
@@ -510,6 +721,7 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
             ctrlRightBtn.setVisible(false);
             pauseBtn.setVisible(false);
             profileBtn.setVisible(false);
+            recordsPanel.setVisible(false);
         }
 
         if (!KeyHandler.gamestart) {
@@ -539,6 +751,17 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
         else if(!KeyHandler.pausePressed && !pm.gameOver)
         {
         pm.update();
+        }
+        // quando entrou em game over, atualizar records se necessário
+        if (pm.gameOver && !gameOverProcessed) {
+            gameOverProcessed = true;
+            int finalScore = pm.getScore();
+            // adicionar novo record com o nome do perfil atual
+            records.add(new Record(currentProfileName, finalScore));
+            // ordenar e manter top5
+            records.sort((a,b) -> Integer.compare(b.score, a.score));
+            if (records.size() > 5) records = new ArrayList<>(records.subList(0,5));
+            saveRecordsToFile();
         }
     }
 

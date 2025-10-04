@@ -443,6 +443,11 @@ public class PlayManager {
 
     }
 
+    // Getter para a pontuação atual (usado por UI)
+    public int getScore() {
+        return score;
+    }
+
     private void drawLeftPanel(Graphics2D g2) {
         // Fundo com gradiente
     GradientPaint panelGP = new GradientPaint(leftPanelX, leftPanelY, new Color(40,43,50,235), leftPanelX, leftPanelY + leftPanelH, new Color(25,27,30,235));

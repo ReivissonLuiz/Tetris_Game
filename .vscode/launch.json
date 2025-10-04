@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Main",
+      "request": "launch",
+      "mainClass": "controller.Main",
+      "projectName": "Tetris_Game_1d20eb5f"
+    },
+    {
+      "type": "java",
+      "name": "Main",
+      "request": "launch",
+      "mainClass": "controller.Main",
+      "projectName": "Tetris-in-Java-main_97115957"
+    }
+  ]
+}

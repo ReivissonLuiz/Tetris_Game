@@ -29,6 +29,10 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
     private JButton musicBtn;
     private JButton restartBtn;
     private JButton quitBtn;
+    private JButton ctrlLeftBtn;
+    private JButton ctrlDownBtn;
+    private JButton ctrlRotateBtn;
+    private JButton ctrlRightBtn;
     private BufferedImage menuBackground;
 
     public static Boolean powerupused;
@@ -76,25 +80,8 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
         restartBtn.addActionListener(new java.awt.event.ActionListener() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent ev) {
-                // limpar estado estático que persiste entre instâncias
-                model.PlayManager.staticBlocks.clear();
-                model.PlayManager.dropInterval = 40;
-                // reset de flags globais
-                KeyHandler.pausePressed = false;
-                KeyHandler.gamestart = true;
-                GamePanel.powerupused = false;
-                GamePanel.powerupInProgress = false;
-
-                // criar novo PlayManager (estado limpo)
-                pm = new PlayManager();
-
-                // esconder botões e garantir foco
-                restartBtn.setVisible(false);
-                quitBtn.setVisible(false);
-                startBtn.setVisible(false);
-                musicBtn.setVisible(false);
+        // ... (setupHoldAction will wire o comportamento de press-and-hold e hover)
                 GamePanel.this.requestFocusInWindow();
-
                 if (KeyHandler.musicOn && !GamePanel.music.isMusicPlaying()) {
                     GamePanel.music.play(0, true);
                     GamePanel.music.loop();
@@ -174,7 +161,59 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
             menuBackground = null;
         }
 
+        // controles de toque (painel direito, centralizados dentro do painel direito)
+        ctrlLeftBtn = new JButton("◄");
+        ctrlDownBtn = new JButton("▼");
+        ctrlRotateBtn = new JButton("⟳");
+        ctrlRightBtn = new JButton("►");
+        JButton[] ctrls = new JButton[] {ctrlLeftBtn, ctrlDownBtn, ctrlRotateBtn, ctrlRightBtn};
+        for (JButton b : ctrls) {
+            b.setFocusable(false);
+            b.setVisible(false);
+            b.setFont(new Font("SansSerif", Font.BOLD, 18));
+            // estilo: fundo escuro, texto claro, borda arredondada
+            b.setBackground(new Color(40, 44, 50));
+            b.setForeground(new Color(230, 230, 230));
+            b.setBorder(BorderFactory.createLineBorder(new Color(100, 100, 110)));
+            this.add(b);
+        }
+
+        // listeners: apenas definem as flags do KeyHandler (o Mino consumirá as flags no próximo update)
+        // implementar press-and-hold: Timer dispara ação repetida enquanto o botão for mantido pressionado
+        // todos os botões: ação única por clique
+        ctrlLeftBtn.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                controller.KeyHandler.leftPressed = true;
+                GamePanel.this.requestFocusInWindow();
+            }
+        });
+        ctrlDownBtn.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                controller.KeyHandler.downPressed = true;
+                GamePanel.this.requestFocusInWindow();
+            }
+        });
+        // girar: apenas uma ação por clique
+        ctrlRotateBtn.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                controller.KeyHandler.upPressed = true;
+                GamePanel.this.requestFocusInWindow();
+            }
+        });
+        ctrlRightBtn.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                controller.KeyHandler.rightPressed = true;
+                GamePanel.this.requestFocusInWindow();
+            }
+        });
+
     }
+
+    
 
 
     public void LaunchGame(){
@@ -257,12 +296,8 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
                 // esconder botões do menu
                 startBtn.setVisible(false);
                 musicBtn.setVisible(false);
-                // reposicionar botões para ficarem sempre abaixo da pontuação (calculo dinâmico)
-                // usar a mesma fonte que o PlayManager usa para desenhar a pontuação (não precisamos instanciar aqui)
-                // garantir que os botões fiquem abaixo de todo o bloco de informações
-                int infoBottom = pm.getInfoBottom();
-                int gapBelowInfo = 12;
-                int btnY = infoBottom + gapBelowInfo;
+                // reposicionar botões para ficarem sempre abaixo da pontuação
+                int btnY = pm.getButtonsY();
                 int btnW = 160;
                 int gap = 20;
                 int leftX = (WIDTH - (btnW * 2 + gap)) / 2;
@@ -272,6 +307,34 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
                 restartBtn.setVisible(false);
                 quitBtn.setVisible(false);
             }
+        }
+
+        // posicionamento e visibilidade dos botões de controle — centralizados dentro do painel direito
+        int btnW = 48;
+        int btnH = 48;
+        int gap = 8;
+        int totalW = btnW * 4 + gap * 3;
+        // usar as coordenadas do painel direito fornecidas pelo PlayManager
+        int rpX = pm.getRightPanelX();
+        int rpY = pm.getRightPanelY();
+        int rpW = pm.getRightPanelW();
+        int rpH = pm.getRightPanelH();
+        int baseX = rpX + Math.max(0, (rpW - totalW) / 2);
+        int baseY = rpY + rpH - btnH - 24; // 24px acima da base do painel
+        if (KeyHandler.gamestart && !pm.gameOver) {
+            ctrlLeftBtn.setVisible(true);
+            ctrlDownBtn.setVisible(true);
+            ctrlRotateBtn.setVisible(true);
+            ctrlRightBtn.setVisible(true);
+            ctrlLeftBtn.setBounds(baseX, baseY, btnW, btnH);
+            ctrlDownBtn.setBounds(baseX + (btnW + gap), baseY, btnW, btnH);
+            ctrlRotateBtn.setBounds(baseX + (btnW + gap) * 2, baseY, btnW, btnH);
+            ctrlRightBtn.setBounds(baseX + (btnW + gap) * 3, baseY, btnW, btnH);
+        } else {
+            ctrlLeftBtn.setVisible(false);
+            ctrlDownBtn.setVisible(false);
+            ctrlRotateBtn.setVisible(false);
+            ctrlRightBtn.setVisible(false);
         }
 
         if (!KeyHandler.gamestart) {

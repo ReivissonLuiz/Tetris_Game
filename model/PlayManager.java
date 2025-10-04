@@ -45,6 +45,8 @@ public class PlayManager {
     // Dimensões da caixa de preview da próxima peça
     final int PREVIEW_BOX_SIZE = 170; // aumentado (antes 130)
     final int PREVIEW_BOX_TOP_OFFSET = 70; // distância do topo do painel
+    // deslocamento adicional para o bloco de informações (pontuação / controles)
+    final int INFO_TOP_OFFSET = 70; // aumente para empurrar as infos para baixo
     // Painel direito (apenas moldura vazia)
     int rightPanelX;
     int rightPanelY;
@@ -106,19 +108,21 @@ public class PlayManager {
         currentMino.setXY(MINO_START_X, MINO_START_Y);
         nextMino = new Mino_Bar();
         nextMino.setXY(NEXT_MINO_X, NEXT_MINO_Y);
+
+        // sem ícones de painel (pausa/perfil) — elementos removidos conforme solicitado
     }
 
     // Retorna uma Y adequada para posicionar botões abaixo da pontuação/preview
     public int getButtonsY() {
         // corresponde ao cálculo usado para desenhar a pontuação em draw()
-        int pmScoreY = leftPanelY + PREVIEW_BOX_TOP_OFFSET + PREVIEW_BOX_SIZE + 40;
+        int pmScoreY = leftPanelY + PREVIEW_BOX_TOP_OFFSET + PREVIEW_BOX_SIZE + INFO_TOP_OFFSET;
         // colocar os botões algumas linhas abaixo do número para evitar sobreposição
         return pmScoreY + 60;
     }
 
     // Retorna o Y (topo / baseline) onde a pontuação é desenhada (usado para calcular posicionamento de UI externo)
     public int getScoreTop() {
-        return leftPanelY + PREVIEW_BOX_TOP_OFFSET + PREVIEW_BOX_SIZE + 40;
+        return leftPanelY + PREVIEW_BOX_TOP_OFFSET + PREVIEW_BOX_SIZE + INFO_TOP_OFFSET;
     }
 
     // Retorna a Y do final do bloco de informações (pontuação + label + stats + mapeamento de teclas)
@@ -126,7 +130,7 @@ public class PlayManager {
         int pmScoreY = getScoreTop();
         int labelY = pmScoreY + 22;
         int statsY = labelY + 20;
-        int keysStartY = statsY + 36;
+        int keysStartY = statsY + 56; // mover o mapeamento para baixo
         int keyLineStep = 20;
         int keysCount = 7; // número de linhas do mapeamento de teclas
         int lastKeyY = keysStartY + (keysCount - 1) * keyLineStep;
@@ -309,12 +313,12 @@ public class PlayManager {
     drawRightPanel(g2);
 
         // Pontuação grande e centralizada abaixo da caixa de preview
-    Font pmScoreFont = new Font("SansSerif", Font.BOLD, 44);
+    Font pmScoreFont = new Font("SansSerif", Font.BOLD, 56);
     g2.setFont(pmScoreFont);
     String scoreStr = String.valueOf(score);
     FontMetrics pmFmScore = g2.getFontMetrics(pmScoreFont);
     int centerX = leftPanelX + (leftPanelW / 2);
-    int pmScoreY = leftPanelY + PREVIEW_BOX_TOP_OFFSET + PREVIEW_BOX_SIZE + 40; // posição vertical abaixo da preview (ajustada para cima)
+    int pmScoreY = leftPanelY + PREVIEW_BOX_TOP_OFFSET + PREVIEW_BOX_SIZE + INFO_TOP_OFFSET; // posição vertical abaixo da preview, deslocada para baixo
     int pmScoreX = centerX - (pmFmScore.stringWidth(scoreStr) / 2);
     g2.setColor(new Color(255,215,0)); // cor da pontuação
     g2.drawString(scoreStr, pmScoreX, pmScoreY);
@@ -328,8 +332,8 @@ public class PlayManager {
         g2.setColor(new Color(230,230,230));
         g2.drawString(scoreLabel, labelX, labelY);
 
-        // Nível e Linhas em texto menor, centrados abaixo do rótulo
-        Font smallFont = new Font("SansSerif", Font.BOLD, 14);
+    // Nível e Linhas em texto maior, centrados abaixo do rótulo
+    Font smallFont = new Font("SansSerif", Font.BOLD, 18);
         g2.setFont(smallFont);
         String stats = "Nível: " + level + "   Linhas: " + lines;
         int statsX = centerX - (g2.getFontMetrics(smallFont).stringWidth(stats) / 2);
@@ -345,12 +349,12 @@ public class PlayManager {
                 "Controles:",
                 "Mover esquerda: A",
                 "Mover direita:  D",
-                "Descer (soft): S",
+                "Descer: S",
                 "Girar: W",
                 "Pausar: Espaço",
                 "Música: M"
         };
-        int keysStartY = statsY + 36;
+    int keysStartY = statsY + 56; // mais espaço entre estatísticas e mapeamento de teclas
         int keyLineStep = 20;
         for (int k = 0; k < keys.length; k++) {
             String line = keys[k];
@@ -498,16 +502,26 @@ public class PlayManager {
     // Painel direito apenas com moldura vazia
     private void drawRightPanel(Graphics2D g2) {
         RoundRectangle2D rr = new RoundRectangle2D.Double(rightPanelX, rightPanelY, rightPanelW, rightPanelH, 28, 28);
-        // Fundo transparente levemente escuro opcional
-        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.15f));
-        g2.setColor(new Color(20,22,25));
+        // Fundo com o mesmo gradiente do painel esquerdo
+        GradientPaint panelGP = new GradientPaint(rightPanelX, rightPanelY, new Color(40,43,50,235), rightPanelX, rightPanelY + rightPanelH, new Color(25,27,30,235));
+        g2.setPaint(panelGP);
         g2.fill(rr);
-        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
-        // Borda com leve brilho
-        GradientPaint borderGP = new GradientPaint((float)rightPanelX, (float)rightPanelY, new Color(150,150,160,170), (float)rightPanelX, (float)(rightPanelY + rightPanelH), new Color(90,90,100,160));
-        g2.setPaint(borderGP);
+        // Borda
         g2.setStroke(new BasicStroke(3f));
+        g2.setColor(new Color(160,160,170,180));
         g2.draw(rr);
         g2.setStroke(new BasicStroke(1f));
+
+    // Espaçamento superior do painel direito (ícones removidos)
+    // (margem superior do painel direita mantida implicitamente)
+
+        // (ícone de perfil removido)
     }
+    // painel direito sem áreas clicáveis para pausa/perfil
+    // getters públicos para uso pelo UI (centralização de controles)
+    public int getRightPanelX() { return rightPanelX; }
+    public int getRightPanelY() { return rightPanelY; }
+    public int getRightPanelW() { return rightPanelW; }
+    public int getRightPanelH() { return rightPanelH; }
+
 }

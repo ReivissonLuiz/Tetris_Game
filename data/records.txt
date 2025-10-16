@@ -1,5 +1,5 @@
+Reivisson:3720
+Reivisson:2780
+Reivisson:2340
+Reivisson:1560
 Player:1200
-Reivisson:1200
-Player:800
-Player:400
-Player:200

@@ -196,7 +196,7 @@ public class PlayManager {
 
         if (staticBlocks.isEmpty()) return;
 
-        // Construir grade lógica de ocupação
+        // Ocupação da grade
         boolean[][] occupied = new boolean[rows][cols];
         for (Block b : staticBlocks) {
             int col = (b.x - left_x) / Block.SIZE;
@@ -206,58 +206,74 @@ public class PlayManager {
             }
         }
 
+        // Detecta linhas completas
+        boolean[] isFullRow = new boolean[rows];
         ArrayList<Integer> fullRows = new ArrayList<>();
         for (int r = 0; r < rows; r++) {
             boolean full = true;
             for (int c = 0; c < cols; c++) {
                 if (!occupied[r][c]) { full = false; break; }
             }
+            isFullRow[r] = full;
             if (full) fullRows.add(r);
         }
 
         if (fullRows.isEmpty()) return;
 
-        // Marcar para efeito visual
+        // Efeito visual (mantém como antes)
         effectsCounterOn = true;
         effectY.clear();
         for (int r : fullRows) {
             effectY.add(top_y + r * Block.SIZE);
         }
 
-        // Remover blocos de linhas completas
-        for (int i = staticBlocks.size() - 1; i >= 0; i--) {
-            Block b = staticBlocks.get(i);
-            int r = (b.y - top_y) / Block.SIZE;
-            if (r >= 0 && fullRows.contains(r)) {
-                staticBlocks.remove(i);
-            }
+        // Pré-calcula quantas linhas completas existem abaixo de cada linha
+        int[] clearedBelow = new int[rows];
+        int acc = 0;
+        for (int r = rows - 1; r >= 0; r--) {
+            clearedBelow[r] = acc;
+            if (isFullRow[r]) acc++;
         }
 
-        // Descer blocos acima
+        // Reconstrói a lista de blocos estáticos:
+        // - remove blocos em linhas completas
+        // - desce blocos de cima de acordo com clearedBelow
+        ArrayList<Block> newStatic = new ArrayList<>(staticBlocks.size());
+        for (Block b : staticBlocks) {
+            int row = (b.y - top_y) / Block.SIZE;
+            int col = (b.x - left_x) / Block.SIZE;
+
+            if (row < 0 || row >= rows || col < 0 || col >= cols) {
+                // fora da grade: mantém como está (ou pule se preferir)
+                newStatic.add(b);
+                continue;
+            }
+
+            if (isFullRow[row]) {
+                // bloco removido (linha completa)
+                continue;
+            }
+
+            int shift = clearedBelow[row];
+            if (shift > 0) {
+                b.y += shift * Block.SIZE;
+            }
+            newStatic.add(b);
+        }
+
+        staticBlocks = newStatic;
+
+        // Atualiza contadores, nível, velocidade e som (mantido)
         int clearedCount = fullRows.size();
-        // Ordena as linhas limpas para processar deslocamento corretamente
-        fullRows.sort(Integer::compareTo);
-        for (int clearedIndex = 0; clearedIndex < fullRows.size(); clearedIndex++) {
-            int clearedRow = fullRows.get(clearedIndex);
-            for (Block b : staticBlocks) {
-                int r = (b.y - top_y) / Block.SIZE;
-                if (r < clearedRow) {
-                    b.y += Block.SIZE; // desce 1 por linha removida abaixo
-                }
-            }
-            // Ajusta linhas subsequentes (porque após descer, próximas referências mudam de posição relativa)
-            for (int j = clearedIndex + 1; j < fullRows.size(); j++) {
-                fullRows.set(j, fullRows.get(j) + 1); // compensa deslocamento
-            }
-        }
-
         lines += clearedCount;
         if (lines > 0 && lines % 10 == 0 && dropInterval > 1) {
             level++;
-            if (dropInterval > 10) dropInterval -= 10; else dropInterval -= 1;
+            if (dropInterval > 10) dropInterval -= 10;
+            else dropInterval -= 1;
         }
 
         GamePanel.se.play(1, false);
+
         int add = switch (clearedCount) {
             case 1 -> 40;
             case 2 -> 100;

@@ -32,4 +32,24 @@ public class Controller {
             }
         }
     }
+
+    // Listener para alternar tema
+    private Runnable themeToggleListener;
+
+    public void setThemeToggleListener(Runnable listener) {
+        this.themeToggleListener = listener;
+    }
+
+    private boolean isDarkTheme = true;
+
+    public boolean toggleTheme() {
+        isDarkTheme = !isDarkTheme;
+        if (themeToggleListener != null) {
+            themeToggleListener.run();
+        }
+        return isDarkTheme;
+    }
+    public boolean isDarkTheme() {
+        return isDarkTheme;
+    }
 }

@@ -41,7 +41,6 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
     private JButton ctrlRightBtn;
     private JButton pauseBtn;
     private JButton profileBtn;
-    private JButton themeToggleBtn;
     private JPanel recordsPanel;
     // Records with name and score
     private static class Record {
@@ -61,10 +60,23 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
     public static Boolean powerupInProgress;
 
     private boolean isDarkTheme = true;
+    private boolean isAltPieceColor = false;
 
     private JButton editProfileBtn;
 
     private JDialog profileDialog;
+
+    // Troque para pastel, não neon
+    private boolean isPastelPieceColor = false;
+    private JRadioButton colorDefaultRadio;
+    private JRadioButton colorPastelRadio;
+    private ButtonGroup colorGroup;
+
+    // Painel de escolha de cor e botão para abrir/fechar
+    private JPanel colorChoicePanel;
+
+    // Adicione flag para pré-visualização
+    private boolean previewEnabled = false;
 
     public GamePanel(KeyHandler kh) {
         powerupused = false;
@@ -76,16 +88,18 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
         this.setFocusable(true);
 
         // criar botão Iniciar
-    startBtn = new JButton("Iniciar");
-    // bounds serão definidos em update() para alinhar com o painel do menu
+        startBtn = new JButton("Iniciar");
         startBtn.setFocusable(false);
         startBtn.addActionListener(new java.awt.event.ActionListener() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent ev) {
+                isPastelPieceColor = colorPastelRadio.isSelected();
+                pm.setAltPieceColor(isPastelPieceColor);
                 KeyHandler.gamestart = true;
                 startBtn.setVisible(false);
                 musicBtn.setVisible(false);
-                // garantir que a música comece se musicOn já estiver true
+                colorDefaultRadio.setVisible(false);
+                colorPastelRadio.setVisible(false);
                 if (KeyHandler.musicOn && !GamePanel.music.isMusicPlaying()) {
                     GamePanel.music.play(0, true);
                     GamePanel.music.loop();
@@ -95,6 +109,78 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
         });
         this.add(startBtn);
 
+        // Painel estilizado para escolha de cor, igual ao estilo do perfil
+        colorChoicePanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                int w = getWidth();
+                int h = getHeight();
+                // Gradiente de fundo igual ao perfil
+                GradientPaint gp = new GradientPaint(0, 0, new Color(50, 60, 90), 0, h, new Color(30, 35, 50));
+                g2.setPaint(gp);
+                g2.fillRect(0, 0, w, h);
+                // Sombra leve igual ao perfil
+                g2.setColor(new Color(0,0,0,40));
+                g2.fillRect(6, 6, w-12, h-12);
+                // Título
+                g2.setFont(new Font("SansSerif", Font.BOLD, 20));
+                g2.setColor(new Color(180, 210, 255));
+                String title = "Estilo das peças";
+                int tx = (w - g2.getFontMetrics().stringWidth(title)) / 2;
+                g2.drawString(title, tx, 32);
+            }
+        };
+        colorChoicePanel.setLayout(null);
+        colorChoicePanel.setOpaque(false);
+        int panelW = 340, panelH = 130;
+        colorChoicePanel.setBounds((WIDTH - panelW) / 2, 0, panelW, panelH);
+
+        // Radio buttons com estilo
+        colorDefaultRadio = new JRadioButton("Cores padrão");
+        colorPastelRadio = new JRadioButton("Cores pastel");
+        colorGroup = new ButtonGroup();
+        colorGroup.add(colorDefaultRadio);
+        colorGroup.add(colorPastelRadio);
+        colorDefaultRadio.setSelected(true);
+
+        colorDefaultRadio.setFocusable(false);
+        colorPastelRadio.setFocusable(false);
+
+        colorDefaultRadio.setBounds(40, 55, 120, 32);
+        colorPastelRadio.setBounds(180, 55, 120, 32);
+
+        colorDefaultRadio.setFont(new Font("SansSerif", Font.BOLD, 15));
+        colorPastelRadio.setFont(new Font("SansSerif", Font.BOLD, 15));
+        colorDefaultRadio.setBackground(new Color(60, 120, 210));
+        colorPastelRadio.setBackground(new Color(120, 80, 160));
+        colorDefaultRadio.setForeground(Color.WHITE);
+        colorPastelRadio.setForeground(Color.WHITE);
+        colorDefaultRadio.setBorder(BorderFactory.createLineBorder(new Color(30, 60, 120), 2, true));
+        colorPastelRadio.setBorder(BorderFactory.createLineBorder(new Color(80, 40, 120), 2, true));
+
+        // Descrições
+        JLabel padraoDesc = new JLabel("Vibrante e clássico");
+        padraoDesc.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        padraoDesc.setForeground(new Color(180, 210, 255));
+        padraoDesc.setBounds(40, 85, 120, 20);
+
+        JLabel pastelDesc = new JLabel("Suave e moderno");
+        pastelDesc.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        pastelDesc.setForeground(new Color(180, 210, 255));
+        pastelDesc.setBounds(180, 85, 120, 20);
+
+        colorChoicePanel.add(colorDefaultRadio);
+        colorChoicePanel.add(colorPastelRadio);
+        colorChoicePanel.add(padraoDesc);
+        colorChoicePanel.add(pastelDesc);
+
+        colorChoicePanel.setVisible(false);
+
+        this.add(colorChoicePanel);
+
         // botão Reiniciar (usado na tela de game over)
         restartBtn = new JButton("Novo jogo");
         restartBtn.setBounds((WIDTH - 340) / 2, (HEIGHT / 2) + 120, 160, 40);
@@ -103,7 +189,7 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
         restartBtn.addActionListener(new java.awt.event.ActionListener() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent ev) {
-        // reiniciar o estado do jogo
+                // reiniciar o estado do jogo
                 gameOverProcessed = false;
                 // limpar blocos estáticos e resetar intervalo de queda
                 model.PlayManager.staticBlocks.clear();
@@ -121,15 +207,16 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
                 KeyHandler.gamequit = false;
                 // criar novo PlayManager para reiniciar posição e estado
                 pm = new PlayManager();
-                // garantir que o jogo está em execução e não em pause
+                isPastelPieceColor = colorPastelRadio.isSelected();
+                pm.setAltPieceColor(isPastelPieceColor);
                 KeyHandler.gamestart = true;
-                // esconder botões de game over
                 restartBtn.setVisible(false);
                 quitBtn.setVisible(false);
                 startBtn.setVisible(false);
                 musicBtn.setVisible(false);
+                colorDefaultRadio.setVisible(true);
+                colorPastelRadio.setVisible(true);
                 GamePanel.this.requestFocusInWindow();
-                // força atualização visual para evitar "fantasmas" de peças antigas
                 repaint();
                 if (KeyHandler.musicOn && !GamePanel.music.isMusicPlaying()) {
                     GamePanel.music.play(0, true);
@@ -308,7 +395,6 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
             public void actionPerformed(java.awt.event.ActionEvent ev) {
                 boolean areButtonsVisible = editProfileBtn.isVisible();
                 editProfileBtn.setVisible(!areButtonsVisible);
-                themeToggleBtn.setVisible(!areButtonsVisible);
             }
         });
 
@@ -386,37 +472,65 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
     dialogPanel.add(editProfileBtn);
     dialogPanel.add(Box.createVerticalStrut(18));
 
-    // botão para alternar tema
-    themeToggleBtn = new JButton("Tema: Escuro");
-    themeToggleBtn.setFocusable(false);
-    themeToggleBtn.setFont(new Font("SansSerif", Font.BOLD, 16));
-    themeToggleBtn.setBackground(new Color(80, 180, 120));
-    themeToggleBtn.setForeground(Color.WHITE);
-    themeToggleBtn.setBorder(BorderFactory.createLineBorder(new Color(40, 100, 60), 2, true));
-    themeToggleBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-    themeToggleBtn.setFocusPainted(false);
-    themeToggleBtn.setMaximumSize(new Dimension(220, 40));
-    themeToggleBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
-    themeToggleBtn.addMouseListener(new java.awt.event.MouseAdapter() {
+    // botão para trocar as cores das peças
+    JButton pieceColorBtn = new JButton("Trocar cor das peças");
+    pieceColorBtn.setFocusable(false);
+    pieceColorBtn.setFont(new Font("SansSerif", Font.BOLD, 16));
+    pieceColorBtn.setBackground(new Color(180, 120, 60));
+    pieceColorBtn.setForeground(Color.WHITE);
+    pieceColorBtn.setBorder(BorderFactory.createLineBorder(new Color(120, 60, 30), 2, true));
+    pieceColorBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    pieceColorBtn.setFocusPainted(false);
+    pieceColorBtn.setMaximumSize(new Dimension(220, 40));
+    pieceColorBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
+    pieceColorBtn.addMouseListener(new java.awt.event.MouseAdapter() {
         @Override
         public void mouseEntered(java.awt.event.MouseEvent e) {
-            themeToggleBtn.setBackground(new Color(100, 200, 140));
+            pieceColorBtn.setBackground(new Color(200, 140, 80));
         }
         @Override
         public void mouseExited(java.awt.event.MouseEvent e) {
-            themeToggleBtn.setBackground(new Color(80, 180, 120));
+            pieceColorBtn.setBackground(new Color(180, 120, 60));
         }
     });
-    themeToggleBtn.addActionListener(new java.awt.event.ActionListener() {
+    pieceColorBtn.addActionListener(new java.awt.event.ActionListener() {
         @Override
         public void actionPerformed(java.awt.event.ActionEvent ev) {
-            isDarkTheme = !isDarkTheme;
-            themeToggleBtn.setText(isDarkTheme ? "Tema: Escuro" : "Tema: Claro");
-            setBackground(isDarkTheme ? Color.BLACK : Color.WHITE);
+            isAltPieceColor = !isAltPieceColor;
+            pm.setAltPieceColor(isAltPieceColor);
             repaint();
         }
     });
-    dialogPanel.add(themeToggleBtn);
+    dialogPanel.add(pieceColorBtn);
+
+    // Opção de pré-visualização com estilo melhorado e sem fundo
+    JCheckBox previewCheck = new JCheckBox("Ativar pré-visualização da peça");
+    previewCheck.setFocusable(false);
+    previewCheck.setFont(new Font("SansSerif", Font.BOLD, 15));
+    previewCheck.setBackground(new Color(0,0,0,0)); // sem fundo
+    previewCheck.setOpaque(false); // sem fundo
+    previewCheck.setForeground(new Color(180, 210, 255));
+    previewCheck.setBorder(BorderFactory.createEmptyBorder(8,0,8,0));
+    previewCheck.setAlignmentX(Component.CENTER_ALIGNMENT);
+    previewCheck.setSelected(previewEnabled);
+    previewCheck.setMaximumSize(new Dimension(260, 36));
+    previewCheck.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    previewCheck.addMouseListener(new java.awt.event.MouseAdapter() {
+        @Override
+        public void mouseEntered(java.awt.event.MouseEvent e) {
+            previewCheck.setForeground(new Color(80, 140, 230));
+        }
+        @Override
+        public void mouseExited(java.awt.event.MouseEvent e) {
+            previewCheck.setForeground(new Color(180, 210, 255));
+        }
+    });
+    previewCheck.addActionListener(e -> {
+        previewEnabled = previewCheck.isSelected();
+        repaint();
+    });
+    dialogPanel.add(previewCheck);
+    dialogPanel.add(Box.createVerticalStrut(12));
 
     // Botão fechar customizado (canto superior direito, sobreposto)
     JButton closeBtn = new JButton("×");
@@ -959,7 +1073,11 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
             g2.setPaint(oldPaint);
 
             pm.draw(g2);
+            // Desenha pré-visualização se ativado
+            if (previewEnabled) {
+                pm.drawPreview(g2);
             }
+        }
 
     }
 

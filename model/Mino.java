@@ -131,7 +131,7 @@ public class Mino {
             int targetY = PlayManager.staticBlocks.get(i).y;
 
 
-        for (int j =0 ; j < b.length ; j++){
+        for (int j =0 ; j <b.length ; j++){
             if(b[j].y + Block.SIZE == targetY && b[j].x == targetX){
                 bottomCollision = true;
             }
@@ -252,11 +252,9 @@ public class Mino {
     }
 
     public void draw(Graphics2D g2){
-           int margin =2;
-           g2.setColor(b[0].c);
-           g2.fillRect(b[0].x+margin,b[0].y+margin,Block.SIZE-(margin*2), Block.SIZE-(margin*2));
-           g2.fillRect(b[1].x+margin,b[1].y+margin,Block.SIZE-(margin*2), Block.SIZE-(margin*2));
-           g2.fillRect(b[2].x+margin,b[2].y+margin,Block.SIZE-(margin*2), Block.SIZE-(margin*2));
-           g2.fillRect(b[3].x+margin,b[3].y+margin,Block.SIZE-(margin*2), Block.SIZE-(margin*2));
+    b[0].draw(g2);
+    b[1].draw(g2);
+    b[2].draw(g2);
+    b[3].draw(g2);
     }
 }

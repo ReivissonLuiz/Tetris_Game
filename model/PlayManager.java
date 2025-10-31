@@ -327,6 +327,48 @@ public class PlayManager {
         }
     }
 
+    // Adicione este método para desenhar a pré-visualização
+    public void drawPreview(Graphics2D g2) {
+        if (currentMino == null || !currentMino.active) return;
+        // Cria uma cópia das posições atuais
+        int[] px = new int[4];
+        int[] py = new int[4];
+        for (int i = 0; i < 4; i++) {
+            px[i] = currentMino.b[i].x;
+            py[i] = currentMino.b[i].y;
+        }
+        // Simula queda até o chão ou colisão
+        boolean collision;
+        do {
+            collision = false;
+            for (int i = 0; i < 4; i++) {
+                int testY = py[i] + Block.SIZE;
+                if (testY + Block.SIZE > bottom_y) {
+                    collision = true;
+                    break;
+                }
+                for (Block b : staticBlocks) {
+                    if (b.x == px[i] && b.y == testY) {
+                        collision = true;
+                        break;
+                    }
+                }
+                if (collision) break;
+            }
+            if (!collision) {
+                for (int i = 0; i < 4; i++) py[i] += Block.SIZE;
+            }
+        } while (!collision);
+
+        // Desenha a sombra da peça
+        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.25f));
+        g2.setColor(new Color(180, 210, 255, 180));
+        for (int i = 0; i < 4; i++) {
+            g2.fillRect(px[i] + 2, py[i] + 2, Block.SIZE - 4, Block.SIZE - 4);
+        }
+        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
+    }
+
     public int getButtonsY() {
         int pmScoreY = leftPanelY + PREVIEW_BOX_TOP_OFFSET + PREVIEW_BOX_SIZE + INFO_TOP_OFFSET;
         return pmScoreY + 60;
@@ -342,6 +384,24 @@ public class PlayManager {
         return keysStartY + (keysCount - 1) * keyLineStep;
     }
     public int getScore() { return score; }
+    public void setAltPieceColor(boolean pastel) {
+        Block.setPastelColorMode(pastel);
+        // Atualiza as peças atuais e próximas para garantir que usem o modo correto
+        if (currentMino != null && currentMino.b != null) {
+            for (Block b : currentMino.b) {
+                b.c = pastel ? b.c : b.c; // Não altera a cor, pois o draw já usa pastelColorMode
+            }
+        }
+        if (nextMino != null && nextMino.b != null) {
+            for (Block b : nextMino.b) {
+                b.c = pastel ? b.c : b.c;
+            }
+        }
+        // Atualiza todos os blocos estáticos também
+        for (Block b : staticBlocks) {
+            b.c = pastel ? b.c : b.c;
+        }
+    }
 
     private void drawLeftPanel(Graphics2D g2) {
         GradientPaint panelGP = new GradientPaint(leftPanelX, leftPanelY, new Color(40,43,50,235), leftPanelX, leftPanelY + leftPanelH, new Color(25,27,30,235));

@@ -77,32 +77,35 @@ public class PlayManager {
         };
     }
 
-    public void update() {
-        if (!KeyHandler.gamestart) return;
+public void update() {
+    if (!KeyHandler.gamestart) return;
 
-        if (!currentMino.active) {
-            boolean minoSobreposto = Arrays.stream(currentMino.b)
-                .anyMatch(block -> staticBlocks.stream()
-                    .anyMatch(b -> b.x == block.x && b.y == block.y));
-            boolean minoNaEntrada = Arrays.stream(currentMino.b)
-                .anyMatch(block -> block.x == MINO_START_X && block.y == MINO_START_Y);
+    // Corrija a queda das peças: atualize o mino apenas se não estiver pausado e não estiver em game over
+    if (!gameOver && !KeyHandler.pausePressed) {
+            if (!currentMino.active) {
+                boolean minoSobreposto = Arrays.stream(currentMino.b)
+                    .anyMatch(block -> staticBlocks.stream()
+                        .anyMatch(b -> b.x == block.x && b.y == block.y));
+                boolean minoNaEntrada = Arrays.stream(currentMino.b)
+                    .anyMatch(block -> block.x == MINO_START_X && block.y == MINO_START_Y);
 
-            if (minoNaEntrada || minoSobreposto) {
-                gameOver = true;
-                GamePanel.music.stop();
-                GamePanel.se.play(2, false);
-                return;
+                if (minoNaEntrada || minoSobreposto) {
+                    gameOver = true;
+                    GamePanel.music.stop();
+                    GamePanel.se.play(2, false);
+                    return;
+                }
+
+                Collections.addAll(staticBlocks, currentMino.b);
+                currentMino.deactivating = false;
+                currentMino = nextMino;
+                currentMino.setXY(MINO_START_X, MINO_START_Y);
+                nextMino = minoPicker();
+                nextMino.setXY(NEXT_MINO_X, NEXT_MINO_Y);
+                checkDelete();
+            } else {
+                currentMino.update();
             }
-
-            Collections.addAll(staticBlocks, currentMino.b);
-            currentMino.deactivating = false;
-            currentMino = nextMino;
-            currentMino.setXY(MINO_START_X, MINO_START_Y);
-            nextMino = minoPicker();
-            nextMino.setXY(NEXT_MINO_X, NEXT_MINO_Y);
-            checkDelete();
-        } else {
-            currentMino.update();
         }
     }
 
@@ -316,14 +319,6 @@ public class PlayManager {
             int scoreY = titleY + fmTitle.getDescent() + 40 + fmScore.getAscent();
             g2.setFont(scoreFont);
             g2.drawString(scoreText, scoreX, scoreY);
-        } else if (KeyHandler.pausePressed) {
-            String paused = "Pausado";
-            Font pausedFont = new Font("Verdana", Font.BOLD, 50);
-            g2.setFont(pausedFont);
-            int pausedWidth = g2.getFontMetrics().stringWidth(paused);
-            int pausedX = left_x + (Block.SIZE * COLS - pausedWidth) / 2;
-            int pausedY = top_y + (Block.SIZE * ROWS / 2);
-            g2.drawString(paused, pausedX, pausedY);
         }
     }
 

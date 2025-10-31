@@ -41,6 +41,7 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
     private JButton ctrlRightBtn;
     private JButton pauseBtn;
     private JButton profileBtn;
+    // private JButton previewToggleBtn; // Remova esta linha
     private JPanel recordsPanel;
     // Records with name and score
     private static class Record {
@@ -77,6 +78,9 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
 
     // Adicione flag para pré-visualização
     private boolean previewEnabled = false;
+
+    // Adicione o botão de continuar como atributo
+    private JButton continueBtn;
 
     public GamePanel(KeyHandler kh) {
         powerupused = false;
@@ -297,41 +301,6 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
             menuBackground = null;
         }
 
-        // controles de toque (painel direito, centralizados dentro do painel direito)
-        ctrlLeftBtn = new JButton("◄");
-        ctrlDownBtn = new JButton("▼");
-        ctrlRotateBtn = new JButton("⟳");
-        ctrlRightBtn = new JButton("►");
-        JButton[] ctrls = new JButton[] {ctrlLeftBtn, ctrlDownBtn, ctrlRotateBtn, ctrlRightBtn};
-        for (JButton b : ctrls) {
-            b.setFocusable(false);
-            b.setVisible(false);
-            b.setFont(new Font("SansSerif", Font.BOLD, 18));
-            // estilo preparado para imagem: sem fundo, sem borda, com cursor de mão
-            b.setContentAreaFilled(false);
-            b.setBorderPainted(false);
-            b.setOpaque(false);
-            b.setForeground(new Color(230, 230, 230));
-            b.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            this.add(b);
-        }
-
-        // botões de canto: pause (esq) e profile (dir) — estilo igual aos botões de controle
-        pauseBtn = new JButton();
-        profileBtn = new JButton();
-        JButton[] cornerBtns = new JButton[] { pauseBtn, profileBtn };
-        for (JButton b : cornerBtns) {
-            b.setFocusable(false);
-            b.setVisible(false);
-            b.setFont(new Font("SansSerif", Font.BOLD, 18));
-            b.setContentAreaFilled(false);
-            b.setBorderPainted(false);
-            b.setOpaque(false);
-            b.setForeground(new Color(230, 230, 230));
-            b.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            this.add(b);
-        }
-
         // painel de records (centralizado no painel direito) - criado aqui e posicionado em update()
         recordsPanel = new JPanel() {
             @Override
@@ -352,7 +321,7 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
 
                 // título
                 g2.setFont(new Font("SansSerif", Font.BOLD, 18));
-                g2.setColor(new Color(240,240,240));
+                g2.setColor(new Color(240, 240, 240));
                 String title = "Records";
                 int tx = (w - g2.getFontMetrics().stringWidth(title)) / 2;
                 g2.drawString(title, tx, 28);
@@ -378,246 +347,269 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
     loadRecordsFromFile();
     loadProfileFromFile();
 
+        // Inicialize os botões de controle ANTES de usar setControlButtonIcon
+        ctrlLeftBtn = new JButton("◄");
+        ctrlDownBtn = new JButton("▼");
+        ctrlRotateBtn = new JButton("⟳");
+        ctrlRightBtn = new JButton("►");
+        pauseBtn = new JButton();
+        profileBtn = new JButton();
+
+        // Adicione os botões ao painel
+        this.add(ctrlLeftBtn);
+        this.add(ctrlDownBtn);
+        this.add(ctrlRotateBtn);
+        this.add(ctrlRightBtn);
+        this.add(pauseBtn);
+        this.add(profileBtn);
+
+        // Agora pode chamar setControlButtonIcon sem erro de null
+        setControlButtonIcon(ctrlLeftBtn, "ctrl_left.png");
+        setControlButtonIcon(ctrlDownBtn, "ctrl_down.png");
+        setControlButtonIcon(ctrlRotateBtn, "ctrl_rotate.png");
+        setControlButtonIcon(ctrlRightBtn, "ctrl_right.png");
         setControlButtonIcon(pauseBtn, "pause.png");
         setControlButtonIcon(profileBtn, "profile.png");
 
+        // Estilização dos botões de controle (setas) para ficarem arredondados igual ao pause/profile
+        JButton[] arrowBtns = {ctrlLeftBtn, ctrlDownBtn, ctrlRotateBtn, ctrlRightBtn};
+        for (JButton btn : arrowBtns) {
+            btn.setFont(new Font("Segoe UI", Font.BOLD, 18));
+            btn.setBackground(new Color(0, 0, 0, 0));
+            btn.setForeground(Color.WHITE);
+            // Remova a borda azul, deixe apenas espaço interno para arredondamento visual
+            btn.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
+            btn.setFocusPainted(false);
+            btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            btn.setContentAreaFilled(false);
+            btn.setOpaque(false);
+            btn.setBorderPainted(false);
+        }
+
+        // Estilização dos botões de pause/profile (arredondados e sem borda azul)
+        pauseBtn.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        pauseBtn.setBackground(new Color(0, 0, 0, 0));
+        pauseBtn.setForeground(Color.WHITE);
+        // Borda arredondada personalizada (remova a borda azul quadrada)
+        pauseBtn.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
+        pauseBtn.setFocusPainted(false);
+        pauseBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        pauseBtn.setContentAreaFilled(false);
+        pauseBtn.setOpaque(false);
+        pauseBtn.setBorderPainted(false);
+
+        profileBtn.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        profileBtn.setBackground(new Color(0, 0, 0, 0));
+        profileBtn.setForeground(Color.WHITE);
+        // Borda arredondada personalizada (remova a borda azul quadrada)
+        profileBtn.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
+        profileBtn.setFocusPainted(false);
+        profileBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        profileBtn.setContentAreaFilled(false);
+        profileBtn.setOpaque(false);
+        profileBtn.setBorderPainted(false);
+
+        // Listeners corretos para pause/profile
         pauseBtn.addActionListener(new java.awt.event.ActionListener() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent ev) {
-                KeyHandler.pausePressed = !KeyHandler.pausePressed;
-                if (KeyHandler.pausePressed) GamePanel.music.stop(); else if(KeyHandler.musicOn) { GamePanel.music.play(0,true); GamePanel.music.loop(); }
-                GamePanel.this.requestFocusInWindow();
-            }
-        });
-
-        profileBtn.addActionListener(new java.awt.event.ActionListener() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent ev) {
-                boolean areButtonsVisible = editProfileBtn.isVisible();
-                editProfileBtn.setVisible(!areButtonsVisible);
-            }
-        });
-
-    // Janela de perfil moderna e centralizada
-    profileDialog = new JDialog((Frame) null, "Opções de Perfil", true);
-    profileDialog.setSize(370, 220);
-    profileDialog.setUndecorated(true); // Remove borda padrão
-    profileDialog.setLocationRelativeTo(null);
-
-    JPanel dialogPanel = new JPanel() {
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            Graphics2D g2 = (Graphics2D) g;
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            // Gradiente de fundo
-            GradientPaint gp = new GradientPaint(0, 0, new Color(50, 60, 90), 0, getHeight(), new Color(30, 35, 50));
-            g2.setPaint(gp);
-            g2.fillRect(0, 0, getWidth(), getHeight()); // borda quadrada
-            // Sombra leve
-            g2.setColor(new Color(0,0,0,40));
-            g2.fillRect(6, 6, getWidth()-12, getHeight()-12); // borda quadrada
-        }
-    };
-    dialogPanel.setOpaque(false);
-    dialogPanel.setLayout(new BoxLayout(dialogPanel, BoxLayout.Y_AXIS));
-    dialogPanel.setBorder(BorderFactory.createEmptyBorder(32, 40, 32, 40));
-
-    JLabel titleLabel = new JLabel("Opções de Perfil");
-    titleLabel.setFont(new Font("SansSerif", Font.BOLD, 22));
-    titleLabel.setForeground(new Color(180, 210, 255));
-    titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-    titleLabel.setBorder(BorderFactory.createEmptyBorder(0,0,18,0));
-    dialogPanel.add(titleLabel);
-
-    // botão para editar o perfil
-    editProfileBtn = new JButton("Editar Perfil");
-    editProfileBtn.setFocusable(false);
-    editProfileBtn.setFont(new Font("SansSerif", Font.BOLD, 16));
-    editProfileBtn.setBackground(new Color(60, 120, 210));
-    editProfileBtn.setForeground(Color.WHITE);
-    editProfileBtn.setBorder(BorderFactory.createLineBorder(new Color(30, 60, 120), 2, true));
-    editProfileBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-    editProfileBtn.setFocusPainted(false);
-    editProfileBtn.setMaximumSize(new Dimension(220, 40));
-    editProfileBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
-    editProfileBtn.addMouseListener(new java.awt.event.MouseAdapter() {
-        @Override
-        public void mouseEntered(java.awt.event.MouseEvent e) {
-            editProfileBtn.setBackground(new Color(80, 140, 230));
-        }
-        @Override
-        public void mouseExited(java.awt.event.MouseEvent e) {
-            editProfileBtn.setBackground(new Color(60, 120, 210));
-        }
-    });
-    editProfileBtn.addActionListener(new java.awt.event.ActionListener() {
-        @Override
-        public void actionPerformed(java.awt.event.ActionEvent ev) {
-            String input = JOptionPane.showInputDialog(GamePanel.this, "Nome do perfil (máx. 15 caracteres):", currentProfileName);
-            if (input != null) {
-                String trimmed = input.trim();
-                if (trimmed.isEmpty()) {
-                    JOptionPane.showMessageDialog(GamePanel.this, "O nome do perfil não pode estar vazio.", "Erro", JOptionPane.ERROR_MESSAGE);
-                } else if (trimmed.length() > 15) {
-                    JOptionPane.showMessageDialog(GamePanel.this, "O nome do perfil não pode ter mais de 15 caracteres.", "Erro", JOptionPane.ERROR_MESSAGE);
-                } else {
-                    currentProfileName = trimmed;
-                    saveProfileToFile();
-                    JOptionPane.showMessageDialog(GamePanel.this, "Perfil atualizado: " + currentProfileName);
+                // Pausar apenas se o jogo estiver rodando e não estiver em game over
+                if (KeyHandler.gamestart && !pm.gameOver) {
+                    KeyHandler.pausePressed = !KeyHandler.pausePressed;
+                    if (KeyHandler.pausePressed) {
+                        GamePanel.music.stop();
+                    } else if(KeyHandler.musicOn) {
+                        GamePanel.music.play(0,true);
+                        GamePanel.music.loop();
+                    }
+                    GamePanel.this.requestFocusInWindow();
                 }
             }
-        }
-    });
-    dialogPanel.add(editProfileBtn);
-    dialogPanel.add(Box.createVerticalStrut(18));
-
-    // botão para trocar as cores das peças
-    JButton pieceColorBtn = new JButton("Trocar cor das peças");
-    pieceColorBtn.setFocusable(false);
-    pieceColorBtn.setFont(new Font("SansSerif", Font.BOLD, 16));
-    pieceColorBtn.setBackground(new Color(180, 120, 60));
-    pieceColorBtn.setForeground(Color.WHITE);
-    pieceColorBtn.setBorder(BorderFactory.createLineBorder(new Color(120, 60, 30), 2, true));
-    pieceColorBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-    pieceColorBtn.setFocusPainted(false);
-    pieceColorBtn.setMaximumSize(new Dimension(220, 40));
-    pieceColorBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
-    pieceColorBtn.addMouseListener(new java.awt.event.MouseAdapter() {
-        @Override
-        public void mouseEntered(java.awt.event.MouseEvent e) {
-            pieceColorBtn.setBackground(new Color(200, 140, 80));
-        }
-        @Override
-        public void mouseExited(java.awt.event.MouseEvent e) {
-            pieceColorBtn.setBackground(new Color(180, 120, 60));
-        }
-    });
-    pieceColorBtn.addActionListener(new java.awt.event.ActionListener() {
-        @Override
-        public void actionPerformed(java.awt.event.ActionEvent ev) {
-            isAltPieceColor = !isAltPieceColor;
-            pm.setAltPieceColor(isAltPieceColor);
-            repaint();
-        }
-    });
-    dialogPanel.add(pieceColorBtn);
-
-    // Opção de pré-visualização com estilo melhorado e sem fundo
-    JCheckBox previewCheck = new JCheckBox("Ativar pré-visualização da peça");
-    previewCheck.setFocusable(false);
-    previewCheck.setFont(new Font("SansSerif", Font.BOLD, 15));
-    previewCheck.setBackground(new Color(0,0,0,0)); // sem fundo
-    previewCheck.setOpaque(false); // sem fundo
-    previewCheck.setForeground(new Color(180, 210, 255));
-    previewCheck.setBorder(BorderFactory.createEmptyBorder(8,0,8,0));
-    previewCheck.setAlignmentX(Component.CENTER_ALIGNMENT);
-    previewCheck.setSelected(previewEnabled);
-    previewCheck.setMaximumSize(new Dimension(260, 36));
-    previewCheck.setCursor(new Cursor(Cursor.HAND_CURSOR));
-    previewCheck.addMouseListener(new java.awt.event.MouseAdapter() {
-        @Override
-        public void mouseEntered(java.awt.event.MouseEvent e) {
-            previewCheck.setForeground(new Color(80, 140, 230));
-        }
-        @Override
-        public void mouseExited(java.awt.event.MouseEvent e) {
-            previewCheck.setForeground(new Color(180, 210, 255));
-        }
-    });
-    previewCheck.addActionListener(e -> {
-        previewEnabled = previewCheck.isSelected();
-        repaint();
-    });
-    dialogPanel.add(previewCheck);
-    dialogPanel.add(Box.createVerticalStrut(12));
-
-    // Botão fechar customizado (canto superior direito, sobreposto)
-    JButton closeBtn = new JButton("×");
-    closeBtn.setFont(new Font("SansSerif", Font.BOLD, 22));
-    closeBtn.setForeground(new Color(200, 220, 255));
-    closeBtn.setBackground(new Color(50, 60, 90, 0));
-    closeBtn.setBorder(BorderFactory.createEmptyBorder());
-    closeBtn.setFocusPainted(false);
-    closeBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-    closeBtn.setContentAreaFilled(false);
-    closeBtn.setBounds(330, 12, 32, 32);
-    closeBtn.addActionListener(_ -> profileDialog.setVisible(false));
-
-    // Painel absoluto para sobrepor o botão de fechar
-    JLayeredPane layeredPane = new JLayeredPane();
-    layeredPane.setPreferredSize(new Dimension(370, 220));
-    dialogPanel.setBounds(0, 0, 370, 220);
-    layeredPane.add(dialogPanel, JLayeredPane.DEFAULT_LAYER);
-    layeredPane.add(closeBtn, JLayeredPane.PALETTE_LAYER);
-
-    profileDialog.setContentPane(layeredPane);
-
-    profileDialog.addComponentListener(new java.awt.event.ComponentAdapter() {
-        @Override
-        public void componentResized(java.awt.event.ComponentEvent e) {
-            dialogPanel.setBounds(0, 0, profileDialog.getWidth(), profileDialog.getHeight());
-            closeBtn.setBounds(profileDialog.getWidth()-40, 12, 32, 32);
-            layeredPane.setPreferredSize(new Dimension(profileDialog.getWidth(), profileDialog.getHeight()));
-        }
-        @Override
-        public void componentShown(java.awt.event.ComponentEvent e) {
-            dialogPanel.setBounds(0, 0, profileDialog.getWidth(), profileDialog.getHeight());
-            closeBtn.setBounds(profileDialog.getWidth()-40, 12, 32, 32);
-            layeredPane.setPreferredSize(new Dimension(profileDialog.getWidth(), profileDialog.getHeight()));
-        }
-    });
-
-    profileBtn.addActionListener(new java.awt.event.ActionListener() {
-        @Override
-        public void actionPerformed(java.awt.event.ActionEvent ev) {
-            profileDialog.setLocationRelativeTo(GamePanel.this);
-            profileDialog.setVisible(true);
-        }
-    });
-
-    // tentar carregar ícones padrão (se houver arquivos em view/)
-    // nomes esperados: view/ctrl_left.png, view/ctrl_down.png, view/ctrl_rotate.png, view/ctrl_right.png
-    setControlButtonIcon(ctrlLeftBtn, "ctrl_left.png");
-    setControlButtonIcon(ctrlDownBtn, "ctrl_down.png");
-    setControlButtonIcon(ctrlRotateBtn, "ctrl_rotate.png");
-    setControlButtonIcon(ctrlRightBtn, "ctrl_right.png");
-
-    // listeners: apenas definem as flags do KeyHandler (o Mino consumirá as flags no próximo update)
-    // implementar press-and-hold: Timer dispara ação repetida enquanto o botão for mantido pressionado
-    // todos os botões: ação única por clique
-    ctrlLeftBtn.addActionListener(new java.awt.event.ActionListener() {
-        @Override
-        public void actionPerformed(java.awt.event.ActionEvent e) {
-                controller.KeyHandler.leftPressed = true;
-                GamePanel.this.requestFocusInWindow();
-            }
         });
-        ctrlDownBtn.addActionListener(new java.awt.event.ActionListener() {
+
+        // criar botão Continuar (aparece no pause)
+        continueBtn = new JButton("Continuar");
+        continueBtn.setFocusable(false);
+        continueBtn.setVisible(false);
+        continueBtn.addActionListener(new java.awt.event.ActionListener() {
             @Override
-            public void actionPerformed(java.awt.event.ActionEvent e) {
-                controller.KeyHandler.downPressed = true;
+            public void actionPerformed(java.awt.event.ActionEvent ev) {
+                KeyHandler.pausePressed = false;
+                if (KeyHandler.musicOn && !GamePanel.music.isMusicPlaying()) {
+                    GamePanel.music.play(0, true);
+                    GamePanel.music.loop();
+                }
                 GamePanel.this.requestFocusInWindow();
             }
         });
-        // girar: apenas uma ação por clique
-        ctrlRotateBtn.addActionListener(new java.awt.event.ActionListener() {
+        this.add(continueBtn);
+
+        // Inicialização do diálogo de perfil
+        profileDialog = new JDialog((Frame) null, "Perfil do Jogador", true);
+        profileDialog.setSize(360, 220);
+        profileDialog.setUndecorated(false);
+        profileDialog.setLayout(null);
+        profileDialog.setResizable(false);
+        profileDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+
+        JPanel profilePanel = new JPanel() {
             @Override
-            public void actionPerformed(java.awt.event.ActionEvent e) {
-                controller.KeyHandler.upPressed = true;
-                GamePanel.this.requestFocusInWindow();
+            protected void paintComponent(Graphics g) {
+                // NÃO chame super.paintComponent(g) para evitar fundo branco!
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                int w = getWidth(), h = getHeight();
+
+                // Fundo principal
+                GradientPaint gp = new GradientPaint(0, 0, new Color(50, 60, 90), 0, h, new Color(30, 35, 50));
+                g2.setPaint(gp);
+                g2.fillRect(0, 0, w, h);
+
+                // Sombra leve
+                g2.setColor(new Color(0,0,0,40));
+                g2.fillRect(8, 8, w-16, h-16);
+
+                // Título (apenas texto branco, sem faixa azul)
+                g2.setColor(Color.WHITE);
+                g2.setFont(new Font("Segoe UI", Font.BOLD, 22));
+                String title = "Perfil do Jogador";
+                int tx = (w - g2.getFontMetrics().stringWidth(title)) / 2;
+                g2.drawString(title, tx, 32);
+            }
+        };
+        profilePanel.setLayout(null);
+        profilePanel.setBounds(0, 0, 360, 220);
+        profilePanel.setOpaque(true);
+
+        JLabel nameLabel = new JLabel("Nome:");
+        nameLabel.setBounds(32, 56, 60, 28);
+        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        nameLabel.setForeground(new Color(180, 210, 255));
+
+        JTextField nameField = new JTextField(currentProfileName);
+        nameField.setBounds(100, 56, 180, 28);
+        nameField.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        nameField.setBackground(new Color(40, 50, 80)); // fundo escuro igual ao resto
+        nameField.setForeground(Color.WHITE);
+        nameField.setCaretColor(new Color(180, 210, 255));
+        nameField.setBorder(BorderFactory.createLineBorder(new Color(80, 120, 200), 2, true));
+
+        JButton saveBtn = new JButton("Salvar nome");
+        saveBtn.setBounds(290, 56, 40, 28);
+        saveBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        saveBtn.setBackground(new Color(80, 120, 200));
+        saveBtn.setForeground(Color.WHITE);
+        saveBtn.setFocusPainted(false);
+        saveBtn.setBorder(BorderFactory.createLineBorder(new Color(80, 120, 200), 2, true));
+        saveBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        JLabel styleLabel = new JLabel("Estilo das peças:");
+        styleLabel.setBounds(32, 100, 120, 24);
+        styleLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        styleLabel.setForeground(new Color(180, 210, 255));
+
+        JButton pastelBtn = new JButton("Pastel");
+        pastelBtn.setBounds(160, 100, 80, 28);
+        pastelBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        pastelBtn.setBackground(new Color(180, 160, 220));
+        pastelBtn.setForeground(Color.WHITE);
+        pastelBtn.setFocusPainted(false);
+        pastelBtn.setBorder(BorderFactory.createLineBorder(new Color(120, 80, 160), 2, true));
+        pastelBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        JButton padraoBtn = new JButton("Padrão");
+        padraoBtn.setBounds(250, 100, 80, 28);
+        padraoBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        padraoBtn.setBackground(new Color(60, 120, 210));
+        padraoBtn.setForeground(Color.WHITE);
+        padraoBtn.setFocusPainted(false);
+        padraoBtn.setBorder(BorderFactory.createLineBorder(new Color(30, 60, 120), 2, true));
+        padraoBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        // Remova o JLabel dicaLabel
+        // JLabel dicaLabel = new JLabel("Dica: personalize seu nome e estilo!");
+        // dicaLabel.setBounds(32, 150, 300, 22);
+        // dicaLabel.setFont(new Font("Segoe UI", Font.ITALIC, 13));
+        // dicaLabel.setForeground(new Color(180, 210, 255, 180));
+
+        // Adicione o botão de pré-visualização mais para cima
+        JButton previewBtn = new JButton("Pré-visualizar peça");
+        previewBtn.setBounds(32, 140, 296, 32); // posição Y ajustada para cima
+        previewBtn.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        previewBtn.setBackground(new Color(80, 120, 200));
+        previewBtn.setForeground(Color.WHITE);
+        previewBtn.setFocusPainted(false);
+        previewBtn.setBorder(BorderFactory.createLineBorder(new Color(80, 120, 200), 2, true));
+        previewBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        previewBtn.addActionListener(e -> {
+            previewEnabled = !previewEnabled;
+            previewBtn.setText(previewEnabled ? "Pré-visualização: ON" : "Pré-visualizar peça");
+            GamePanel.this.repaint();
+        });
+
+        saveBtn.addActionListener(e -> {
+            String newName = nameField.getText().trim();
+            if (!newName.isEmpty()) {
+                currentProfileName = newName;
+                saveProfileToFile();
+                JOptionPane.showMessageDialog(profileDialog, "Nome salvo!", "Perfil", JOptionPane.INFORMATION_MESSAGE);
             }
         });
-        ctrlRightBtn.addActionListener(new java.awt.event.ActionListener() {
+
+        pastelBtn.addActionListener(e -> {
+            isPastelPieceColor = true;
+            colorPastelRadio.setSelected(true);
+            colorDefaultRadio.setSelected(false);
+            pm.setAltPieceColor(true);
+            JOptionPane.showMessageDialog(profileDialog, "Estilo pastel ativado!", "Perfil", JOptionPane.INFORMATION_MESSAGE);
+        });
+
+        padraoBtn.addActionListener(e -> {
+            isPastelPieceColor = false;
+            colorDefaultRadio.setSelected(true);
+            colorPastelRadio.setSelected(false);
+            pm.setAltPieceColor(false);
+            JOptionPane.showMessageDialog(profileDialog, "Estilo padrão ativado!", "Perfil", JOptionPane.INFORMATION_MESSAGE);
+        });
+
+        profilePanel.add(nameLabel);
+        profilePanel.add(nameField);
+        profilePanel.add(saveBtn);
+        profilePanel.add(styleLabel);
+        profilePanel.add(pastelBtn);
+        profilePanel.add(padraoBtn);
+        // Remova: profilePanel.add(dicaLabel);
+        profilePanel.add(previewBtn);
+
+        profileDialog.setContentPane(profilePanel);
+
+        // Corrija o botão de perfil para abrir apenas UMA janela
+        profileBtn.addActionListener(e -> {
+            nameField.setText(currentProfileName);
+            if (!profileDialog.isVisible()) {
+                profileDialog.setLocationRelativeTo(GamePanel.this);
+                profileDialog.setVisible(true);
+            }
+        });
+
+        // Adicione este WindowListener para garantir que o foco volta ao painel após fechar o perfil
+        profileDialog.addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
-            public void actionPerformed(java.awt.event.ActionEvent e) {
-                controller.KeyHandler.rightPressed = true;
+            public void windowClosed(java.awt.event.WindowEvent e) {
+                GamePanel.this.requestFocusInWindow();
+            }
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
                 GamePanel.this.requestFocusInWindow();
             }
         });
 
+        // Remova qualquer outro listener duplicado para profileBtn
     }
 
+    // Os valores padrão de pontuação para records estão definidos neste trecho:
+    // 1200, 800, 400, 200, 100
     // Carrega records de data/records.txt; formato: name:score por linha (ou somente score para compatibilidade)
     private void loadRecordsFromFile() {
         try {
@@ -741,8 +733,8 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
                 // log simples para ajudar a diagnosticar qualidade: origem e dimensões
                 int ow = img.getWidth(null);
                 int oh = img.getHeight(null);
-                System.out.println("[IconLoad] " + filename + " loaded from=" + loadedFrom + " orig=" + ow + "x" + oh + " target=48x48");
-                // usar downscale progressivo para preservar mais nitidez em reduções grandes
+                // Comentado para não imprimir no terminal:
+                // System.out.println("[IconLoad] " + filename + " loaded from=" + loadedFrom + " orig=" + ow + "x" + oh + " target=48x48");
                 BufferedImage scaledBuf = getProgressiveDownscale(img, 48, 48);
                 if (scaledBuf != null) {
                     btn.setIcon(new ImageIcon(scaledBuf));
@@ -898,47 +890,14 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
 
     private void update() {
         // mostrar/ocultar botões do menu inicial conforme estado do jogo
-        if (startBtn != null && musicBtn != null && restartBtn != null && quitBtn != null) {
+        if (startBtn != null && musicBtn != null && restartBtn != null && quitBtn != null && continueBtn != null) {
             boolean inMenu = !KeyHandler.gamestart && !pm.gameOver;
+
+            // Botões da tela inicial
             startBtn.setVisible(inMenu);
             musicBtn.setVisible(inMenu);
-            // quando game over, mostrar restart/quit
-            if (pm.gameOver) {
-                restartBtn.setVisible(true);
-                quitBtn.setVisible(true);
-                // esconder botões do menu
-                startBtn.setVisible(false);
-                musicBtn.setVisible(false);
-                // reposicionar botões para ficarem sempre abaixo da pontuação
-                // deixar os botões de game-over um pouco mais para baixo
-                int btnY = pm.getButtonsY() + 20;
-                int btnW = 160;
-                int gap = 20;
-                int leftX = (WIDTH - (btnW * 2 + gap)) / 2;
-                restartBtn.setBounds(leftX, btnY, btnW, 40);
-                quitBtn.setBounds(leftX + btnW + gap, btnY, btnW, 40);
-            } else if (KeyHandler.pausePressed && !pm.gameOver) {
-                // quando pausado, mostrar os mesmos botões (Novo jogo / Sair)
-                restartBtn.setVisible(true);
-                quitBtn.setVisible(true);
-                startBtn.setVisible(false);
-                musicBtn.setVisible(false);
-                int btnY = pm.getButtonsY() + 20;
-                int btnW = 160;
-                int gap = 20;
-                int leftX = (WIDTH - (btnW * 2 + gap)) / 2;
-                restartBtn.setBounds(leftX, btnY, btnW, 40);
-                quitBtn.setBounds(leftX + btnW + gap, btnY, btnW, 40);
-                // esconder controles enquanto pausado
-                ctrlLeftBtn.setVisible(false);
-                ctrlDownBtn.setVisible(false);
-                ctrlRotateBtn.setVisible(false);
-                ctrlRightBtn.setVisible(false);
-            } else {
-                restartBtn.setVisible(false);
-                quitBtn.setVisible(false);
-            }
-            // quando estamos no menu, posicionar start/music centralizados dentro do painel do menu
+
+            // Quando estamos no menu, posicionar start/music centralizados dentro do painel do menu
             if (inMenu) {
                 int panelX = mh.getPanelX();
                 int panelY = mh.getPanelY();
@@ -949,113 +908,147 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
                 int musicW = 130;
                 int musicH = 30;
                 int startX = panelX + (panelW - startW) / 2;
-                int startY = panelY + panelH - startH - 60; // 60px acima da base do painel
+                int startY = panelY + panelH - startH - 60;
                 int musicX = panelX + (panelW - musicW) / 2;
                 int musicY = startY + startH + 10;
                 startBtn.setBounds(startX, startY, startW, startH);
                 musicBtn.setBounds(musicX, musicY, musicW, musicH);
+
+                // Estilização moderna dos botões iniciais
+                startBtn.setFont(new Font("Segoe UI", Font.BOLD, 22));
+                startBtn.setBackground(new Color(60, 120, 210));
+                startBtn.setForeground(Color.WHITE);
+                startBtn.setBorder(BorderFactory.createLineBorder(new Color(30, 60, 120), 3, true));
+                startBtn.setFocusPainted(false);
+                startBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+                musicBtn.setFont(new Font("Segoe UI", Font.BOLD, 16));
+                musicBtn.setBackground(new Color(80, 120, 200));
+                musicBtn.setForeground(Color.WHITE);
+                musicBtn.setBorder(BorderFactory.createLineBorder(new Color(80, 120, 200), 2, true));
+                musicBtn.setFocusPainted(false);
+                musicBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+                // Esconda os botões de controle, perfil, pause e records na tela inicial
+                ctrlLeftBtn.setVisible(false);
+                ctrlDownBtn.setVisible(false);
+                ctrlRotateBtn.setVisible(false);
+                ctrlRightBtn.setVisible(false);
+                pauseBtn.setVisible(false);
+                profileBtn.setVisible(false);
+                recordsPanel.setVisible(false);
+            }
+            // ...existing code for pause/game over/buttons...
+            else if (KeyHandler.gamestart && !pm.gameOver && !KeyHandler.pausePressed) {
+                // Mostre os botões de controle, perfil, pause e records durante o jogo
+                ctrlLeftBtn.setVisible(true);
+                ctrlDownBtn.setVisible(true);
+                ctrlRotateBtn.setVisible(true);
+                ctrlRightBtn.setVisible(true);
+                pauseBtn.setVisible(true);
+                profileBtn.setVisible(true);
+                recordsPanel.setVisible(true);
+
+                // Posicione os botões de controle e records
+                int btnW = 48;
+                int btnH = 48;
+                int gap = 8;
+                int totalW = btnW * 4 + gap * 3;
+                int rpX = pm.getRightPanelX();
+                int rpY = pm.getRightPanelY();
+                int rpW = pm.getRightPanelW();
+                int rpH = pm.getRightPanelH();
+                int baseX = rpX + (rpW - totalW) / 2;
+                int baseY = rpY + rpH - btnH - 24;
+
+                ctrlLeftBtn.setBounds(baseX, baseY, btnW, btnH);
+                ctrlDownBtn.setBounds(baseX + (btnW + gap), baseY, btnW, btnH);
+                ctrlRotateBtn.setBounds(baseX + (btnW + gap) * 2, baseY, btnW, btnH);
+                ctrlRightBtn.setBounds(baseX + (btnW + gap) * 3, baseY, btnW, btnH);
+
+                int cornerPadding = 12;
+                pauseBtn.setBounds(rpX + cornerPadding, rpY + cornerPadding, btnW, btnH);
+                profileBtn.setBounds(rpX + rpW - cornerPadding - btnW, rpY + cornerPadding, btnW, btnH);
+
+                int recordsW = 180;
+                int recordsH = 180;
+                int recordsX = rpX + (rpW - recordsW) / 2;
+                int recordsY = rpY + (rpH - recordsH) / 2 - 30;
+                recordsPanel.setBounds(recordsX, recordsY, recordsW, recordsH);
             }
         }
+        // PAUSE: mostrar botões de novo jogo, sair e continuar
+        if (KeyHandler.pausePressed && !pm.gameOver) {
+            int btnW = 120;
+            int btnH = 38;
+            int gap = 18;
+            int totalW = btnW * 3 + gap * 2;
+            int baseX = (WIDTH - totalW) / 2;
+            int baseY = HEIGHT / 2 + 10;
 
-        // posicionamento e visibilidade dos botões de controle — centralizados dentro do painel direito
-        int btnW = 48;
-        int btnH = 48;
-        int gap = 8;
-        int totalW = btnW * 4 + gap * 3;
-        // usar as coordenadas do painel direito fornecidas pelo PlayManager
-        int rpX = pm.getRightPanelX();
-        int rpY = pm.getRightPanelY();
-        int rpW = pm.getRightPanelW();
-        int rpH = pm.getRightPanelH();
-        int baseX = rpX + Math.max(0, (rpW - totalW) / 2);
-        int baseY = rpY + rpH - btnH - 24; // 24px acima da base do painel
-        if (KeyHandler.gamestart && !pm.gameOver) {
+            restartBtn.setBounds(baseX, baseY, btnW, btnH);
+            continueBtn.setBounds(baseX + btnW + gap, baseY, btnW, btnH);
+            quitBtn.setBounds(baseX + (btnW + gap) * 2, baseY, btnW, btnH);
+
+            restartBtn.setVisible(true);
+            continueBtn.setVisible(true);
+            quitBtn.setVisible(true);
+
+            restartBtn.setFont(new Font("Segoe UI", Font.BOLD, 15));
+            restartBtn.setBackground(new Color(60, 120, 210));
+            restartBtn.setForeground(Color.WHITE);
+            restartBtn.setBorder(BorderFactory.createLineBorder(new Color(30, 60, 120), 2, true));
+            restartBtn.setFocusPainted(false);
+            restartBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+            continueBtn.setFont(new Font("Segoe UI", Font.BOLD, 15));
+            continueBtn.setBackground(new Color(80, 180, 120));
+            continueBtn.setForeground(Color.WHITE);
+            continueBtn.setBorder(BorderFactory.createLineBorder(new Color(40, 120, 60), 2, true));
+            continueBtn.setFocusPainted(false);
+            continueBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+            quitBtn.setFont(new Font("Segoe UI", Font.BOLD, 15));
+            quitBtn.setBackground(new Color(180, 80, 80));
+            quitBtn.setForeground(Color.WHITE);
+            quitBtn.setBorder(BorderFactory.createLineBorder(new Color(120, 40, 40), 2, true));
+            quitBtn.setFocusPainted(false);
+            quitBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+            // NÃO esconda os controles, pause, perfil e records durante o pause
             ctrlLeftBtn.setVisible(true);
             ctrlDownBtn.setVisible(true);
             ctrlRotateBtn.setVisible(true);
             ctrlRightBtn.setVisible(true);
-            ctrlLeftBtn.setBounds(baseX, baseY, btnW, btnH);
-            ctrlDownBtn.setBounds(baseX + (btnW + gap), baseY, btnW, btnH);
-            ctrlRotateBtn.setBounds(baseX + (btnW + gap) * 2, baseY, btnW, btnH);
-            ctrlRightBtn.setBounds(baseX + (btnW + gap) * 3, baseY, btnW, btnH);
-            // mostrar também os botões de canto (estilo igual aos controles)
             pauseBtn.setVisible(true);
             profileBtn.setVisible(true);
-            // mostrar painel de records no meio do painel direito
-            int recordsW = 180;
-            int recordsH = 180;
-            int recordsX = rpX + (rpW - recordsW) / 2;
-            int recordsY = rpY + (rpH - recordsH) / 2 - 30; // leve ajuste para cima
-            recordsPanel.setBounds(recordsX, recordsY, recordsW, recordsH);
             recordsPanel.setVisible(true);
-        } else {
-            ctrlLeftBtn.setVisible(false);
-            ctrlDownBtn.setVisible(false);
-            ctrlRotateBtn.setVisible(false);
-            ctrlRightBtn.setVisible(false);
-            pauseBtn.setVisible(false);
-            profileBtn.setVisible(false);
-            recordsPanel.setVisible(false);
+        } else if (!KeyHandler.pausePressed && !pm.gameOver) {
+            continueBtn.setVisible(false);
+            restartBtn.setVisible(false);
+            quitBtn.setVisible(false);
         }
-
-        if (!KeyHandler.gamestart) {
-            mh.update();
+        // Adicione esta linha para garantir que as peças descem corretamente:
+        if (KeyHandler.gamestart && !KeyHandler.pausePressed && !pm.gameOver) {
+            pm.update();
         }
-    // posicionar os botões DENTRO do painel direito (sem fundo)
-    int cornerPadding = 12;
-        // usar coordenadas do painel direito
-        int rpx = pm.getRightPanelX();
-        int rpy = pm.getRightPanelY();
-        int rpw = pm.getRightPanelW();
-    // pause no canto superior esquerdo do painel direito
-    pauseBtn.setBounds(rpx + cornerPadding, rpy + cornerPadding, btnW, btnH);
-    // profile no canto superior direito do painel direito
-    profileBtn.setBounds(rpx + rpw - cornerPadding - btnW, rpy + cornerPadding, btnW, btnH);
-        // reforçar estilo sem fundo
-        pauseBtn.setContentAreaFilled(false);
-        pauseBtn.setBorderPainted(false);
-        pauseBtn.setOpaque(false);
-        profileBtn.setContentAreaFilled(false);
-        profileBtn.setBorderPainted(false);
-        profileBtn.setOpaque(false);
-        if (KeyHandler.gamequit)
-        {
-            System.exit(0);
-        }
-        else if(!KeyHandler.pausePressed && !pm.gameOver)
-        {
-        pm.update();
-        }
-        // quando entrou em game over, atualizar records se necessário
-        if (pm.gameOver && !gameOverProcessed) {
-            gameOverProcessed = true;
-            int finalScore = pm.getScore();
-            // adicionar novo record com o nome do perfil atual
-            records.add(new Record(currentProfileName, finalScore));
-            // ordenar e manter top5
-            records.sort((a,b) -> Integer.compare(b.score, a.score));
-            if (records.size() > 5) records = new ArrayList<>(records.subList(0,5));
-            saveRecordsToFile();
-            // força atualização visual para limpar peças antigas
-            repaint();
-        }
+        // ...existing code...
     }
 
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
-
         Graphics2D g2 = (Graphics2D) g;
         if (!KeyHandler.gamestart)
         {
-            // desenhar imagem de fundo do menu se disponível
+            // Fundo já é imagem, não desenhe gradiente
             if (menuBackground != null) {
                 g2.drawImage(menuBackground, 0, 0, WIDTH, HEIGHT, null);
             }
-            if (!isDarkTheme) {
-                g2.setColor(new Color(240, 240, 240, 100));
-                g2.fillRect(0, 0, WIDTH, HEIGHT);
+
+            // NÃO desenhe nada do MenuHandler se estiver pausado
+            if (!KeyHandler.pausePressed) {
+                mh.draw(g2);
             }
-            mh.draw(g2);
         }
         else {
             // desenhar a mesma imagem de fundo e aplicar o gradiente semi-transparente
@@ -1075,10 +1068,27 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
             pm.draw(g2);
             // Desenha pré-visualização se ativado
             if (previewEnabled) {
-                pm.drawPreview(g2);
+                pm.drawPreview(g2); // Certifique-se que PlayManager tem drawPreview(Graphics2D)
             }
         }
 
+        if (KeyHandler.pausePressed && !pm.gameOver) {
+            // Painel escurecido e mensagem de pausa
+            g2.setColor(new Color(30, 30, 40, 220));
+            g2.fillRoundRect(WIDTH / 2 - 260, HEIGHT / 2 - 120, 520, 240, 32, 32);
+
+            g2.setFont(new Font("Segoe UI", Font.BOLD, 38));
+            g2.setColor(new Color(180, 210, 255));
+            String msg = "Jogo Pausado";
+            int msgW = g2.getFontMetrics().stringWidth(msg);
+            g2.drawString(msg, (WIDTH - msgW) / 2, HEIGHT / 2 - 40);
+
+            g2.setFont(new Font("Segoe UI", Font.PLAIN, 20));
+            g2.setColor(new Color(220, 220, 220));
+            String dica = "Escolha uma opção abaixo";
+            int dicaW = g2.getFontMetrics().stringWidth(dica);
+            g2.drawString(dica, (WIDTH - dicaW) / 2, HEIGHT / 2);
+        }
     }
 
     @Override

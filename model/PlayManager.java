@@ -179,12 +179,6 @@ public void update() {
     public void draw(Graphics2D g2) {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        Composite oldComp = g2.getComposite();
-        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.35f));
-        g2.setColor(Color.BLACK);
-        g2.fillRect(left_x + 6, top_y + 8, Block.SIZE * COLS, Block.SIZE * ROWS);
-        g2.setComposite(oldComp);
-
         GradientPaint playBG = new GradientPaint(left_x, top_y, new Color(60, 63, 65), right_x, bottom_y, new Color(25, 28, 30));
         g2.setPaint(playBG);
         g2.fillRect(left_x, top_y, Block.SIZE * COLS, Block.SIZE * ROWS);
@@ -283,42 +277,6 @@ public void update() {
                 effectCounter = 0;
                 effectY.clear();
             }
-        }
-
-        g2.setColor(Color.YELLOW);
-        if (gameOver) {
-            Paint oldPaint = g2.getPaint();
-            Composite oldComposite = g2.getComposite();
-            GradientPaint gp = new GradientPaint(0, 0, new Color(0, 0, 0, 200), 0, GamePanel.HEIGHT, new Color(40, 40, 40, 220));
-            g2.setPaint(gp);
-            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.88f));
-            g2.fillRect(0, 0, GamePanel.WIDTH, GamePanel.HEIGHT);
-            g2.setPaint(oldPaint);
-            g2.setComposite(oldComposite);
-
-            String title = "Você perdeu";
-            Font titleFont = new Font("Verdana", Font.BOLD, 64);
-            g2.setFont(titleFont);
-            FontMetrics fmTitle = g2.getFontMetrics(titleFont);
-            int titleWidth = fmTitle.stringWidth(title);
-
-            String scoreText = "Pontuação: " + score;
-            Font scoreFont = new Font("SansSerif", Font.BOLD, 36);
-            g2.setFont(scoreFont);
-            FontMetrics fmScore = g2.getFontMetrics(scoreFont);
-            int scoreWidth = fmScore.stringWidth(scoreText);
-
-            int titleX = (GamePanel.WIDTH - titleWidth) / 2;
-            int titleY = (GamePanel.HEIGHT / 2);
-
-            g2.setColor(Color.YELLOW);
-            g2.setFont(titleFont);
-            g2.drawString(title, titleX, titleY);
-
-            int scoreX = (GamePanel.WIDTH - scoreWidth) / 2;
-            int scoreY = titleY + fmTitle.getDescent() + 40 + fmScore.getAscent();
-            g2.setFont(scoreFont);
-            g2.drawString(scoreText, scoreX, scoreY);
         }
     }
 

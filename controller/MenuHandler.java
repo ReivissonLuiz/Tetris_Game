@@ -20,6 +20,8 @@ public class MenuHandler {
     // contador para animação do título
     private int tick = 0;
 
+    // removed unused fields titleScale and scaleIncreasing; animation is driven by 'tick'
+
     public void draw(Graphics2D g2){
         // fundo em gradiente
         GradientPaint menuBG = new GradientPaint(0, 0, Color.DARK_GRAY, 0, HEIGHT, Color.BLACK);
@@ -33,24 +35,23 @@ public class MenuHandler {
 
         g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-    // título central com pulso (animação)
-    String title = "Bem vindo ao Tetris";
-    // calcular pulso suave baseado em tick
-    double pulse = 1.0 + Math.sin(tick * 0.06) * 0.06; // varia em torno de 1.0
-    Font baseTitle = new Font("Verdana", Font.BOLD, 64);
-    Font titleFont = baseTitle.deriveFont((float) (64 * pulse));
-    g2.setFont(titleFont);
-    FontMetrics fmTitle = g2.getFontMetrics(titleFont);
-    int titleWidth = fmTitle.stringWidth(title);
-    int titleX = (WIDTH - titleWidth) / 2;
-    int titleY = HEIGHT / 3;
-    // sombra com deslocamento dependente do pulso
-    int shadowOffset = (int) Math.max(2, 4 * (pulse - 1.0) / 0.06);
-    g2.setColor(new Color(0, 0, 0, 160));
-    g2.drawString(title, titleX + shadowOffset, titleY + shadowOffset);
-    // cor principal do título
-    g2.setColor(new Color(240, 240, 245));
-    g2.drawString(title, titleX, titleY);
+        // título central com animação de zoom pulsante
+        String title = "Bem vindo ao Tetris";
+        double pulse = 1.0 + Math.sin(tick * 0.08) * 0.08; // varia em torno de 1.0
+        Font baseTitle = new Font("Verdana", Font.BOLD, 64);
+        Font titleFont = baseTitle.deriveFont((float) (64 * pulse));
+        g2.setFont(titleFont);
+        FontMetrics fmTitle = g2.getFontMetrics(titleFont);
+        int titleWidth = fmTitle.stringWidth(title);
+        int titleX = (WIDTH - titleWidth) / 2;
+        int titleY = HEIGHT / 3;
+
+        // sombra
+        g2.setColor(new Color(0, 0, 0, 160));
+        g2.drawString(title, titleX + 4, titleY + 4);
+        // cor principal do título
+        g2.setColor(new Color(240, 240, 245));
+        g2.drawString(title, titleX, titleY);
 
         // subtítulo abaixo do título
         Font subF = new Font("SansSerif", Font.PLAIN, 18);
@@ -64,10 +65,9 @@ public class MenuHandler {
 
     public void update()
     {
-
-        // avançar o contador para animação do título
+        // Animação de zoom pulsante
         tick++;
-
+        // Força repaint externo para garantir animação fluida
     }
 
     // getters para permitir alinhamento de botões externos

@@ -31,8 +31,12 @@ public class PlayManager {
     private int effectCounter = 0;
     private ArrayList<Integer> effectY = new ArrayList<>();
     private int level = 1, lines = 0, score = 0;
+    private boolean gameOverSaved = false;
+    private view.GamePanel gamePanel;
 
-    public PlayManager() {
+    public PlayManager(view.GamePanel gp) {
+        this.gamePanel = gp;
+        
         top_y = Math.max((GamePanel.HEIGHT - Block.SIZE * ROWS) / 2, 20);
         leftPanelX = 40;
         leftPanelY = top_y;
@@ -80,7 +84,6 @@ public class PlayManager {
 public void update() {
     if (!KeyHandler.gamestart) return;
 
-    // Corrija a queda das peças: atualize o mino apenas se não estiver pausado e não estiver em game over
     if (!gameOver && !KeyHandler.pausePressed) {
             if (!currentMino.active) {
                 boolean minoSobreposto = Arrays.stream(currentMino.b)
@@ -93,6 +96,28 @@ public void update() {
                     gameOver = true;
                     GamePanel.music.stop();
                     GamePanel.se.play(2, false);
+                    // Salvar record imediatamente quando game over
+                if (gamePanel != null && !gameOverSaved) {
+                        gameOverSaved = true;
+                        // Obtain the current profile name via a public getter if available,
+                        // otherwise fall back to reflective access of the field.
+                        String profileName = null;
+                        try {
+                            try {
+                                java.lang.reflect.Method m = gamePanel.getClass().getMethod("getCurrentProfileName");
+                                Object v = m.invoke(gamePanel);
+                                if (v instanceof String) profileName = (String) v;
+                            } catch (NoSuchMethodException nm) {
+                                java.lang.reflect.Field f = gamePanel.getClass().getDeclaredField("currentProfileName");
+                                f.setAccessible(true);
+                                Object v = f.get(gamePanel);
+                                if (v instanceof String) profileName = (String) v;
+                            }
+                        } catch (Exception e) {
+                            // ignore and leave profileName as null
+                        }
+                        gamePanel.addRecord(profileName, score);
+                    }
                     return;
                 }
 

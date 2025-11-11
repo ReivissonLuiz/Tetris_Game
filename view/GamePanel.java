@@ -23,7 +23,7 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
     final int FPS = 60;
     Thread GameThread;
 
-    PlayManager pm = new PlayManager();
+    PlayManager pm = new PlayManager(this);
     MenuHandler mh = new MenuHandler();
     public static Sound music = new Sound();
     public static Sound se = new Sound();
@@ -148,7 +148,7 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
             KeyHandler.upPressed = false;
             KeyHandler.pausePressed = false;
             KeyHandler.gamequit = false;
-            pm = new PlayManager();
+            pm = new PlayManager(this);
             isPastelPieceColor = colorPastelRadio.isSelected();
             pm.setAltPieceColor(isPastelPieceColor);
             KeyHandler.gamestart = true;
@@ -511,6 +511,29 @@ public class GamePanel extends JPanel implements Runnable, PowerUpObserver {
                 if (!n.isEmpty()) currentProfileName = n;
             }
         } catch (IOException ex) {}
+    }
+
+    public void addRecord(String name, int score) {
+        records.add(new Record(name, score));
+        records.sort((a, b) -> Integer.compare(b.score, a.score));
+        if (records.size() > 5) records = new ArrayList<>(records.subList(0, 5));
+        saveRecordsToFile();
+        recordsPanel.repaint();
+    }
+
+    private void saveRecordsToFile() {
+        try {
+            Path dataDir = Paths.get("data");
+            if (!Files.exists(dataDir)) Files.createDirectories(dataDir);
+            Path file = dataDir.resolve("records.txt");
+            List<String> lines = new ArrayList<>();
+            for (Record r : records) {
+                lines.add(r.name + ":" + r.score);
+            }
+            Files.write(file, lines);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
 
     private void setControlButtonIcon(JButton btn, String filename) {

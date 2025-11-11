@@ -20,8 +20,6 @@ public class MenuHandler {
     // contador para animação do título
     private int tick = 0;
 
-    // removed unused fields titleScale and scaleIncreasing; animation is driven by 'tick'
-
     public void draw(Graphics2D g2){
         // fundo em gradiente
         GradientPaint menuBG = new GradientPaint(0, 0, Color.DARK_GRAY, 0, HEIGHT, Color.BLACK);
